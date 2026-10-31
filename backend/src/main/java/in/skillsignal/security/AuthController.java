@@ -172,3 +172,4 @@ public class AuthController {
         return ResponseEntity.ok(UserDto.from(user));
     }
 }
+

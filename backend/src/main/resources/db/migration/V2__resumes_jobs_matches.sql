@@ -69,3 +69,4 @@ CREATE TABLE job_matches (
 
 CREATE INDEX idx_job_matches_user_id ON job_matches(user_id);
 CREATE INDEX idx_job_matches_job_id ON job_matches(job_id);
+

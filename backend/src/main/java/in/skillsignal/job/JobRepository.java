@@ -10,3 +10,4 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
     Optional<Job> findByIdAndUserId(UUID id, UUID userId);
     void deleteByUserId(UUID userId);
 }
+

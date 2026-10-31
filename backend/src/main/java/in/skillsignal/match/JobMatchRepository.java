@@ -11,3 +11,4 @@ public interface JobMatchRepository extends JpaRepository<JobMatch, UUID> {
     Optional<JobMatch> findFirstByJobIdAndResumeVersionIdAndUserId(UUID jobId, UUID resumeVersionId, UUID userId);
     void deleteByUserId(UUID userId);
 }
+

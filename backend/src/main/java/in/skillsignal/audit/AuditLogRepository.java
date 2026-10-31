@@ -8,3 +8,4 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     List<AuditLog> findByUserIdOrderByCreatedAtDesc(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

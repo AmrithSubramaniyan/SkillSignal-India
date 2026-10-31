@@ -150,3 +150,4 @@ public class PrivacyController {
         return ResponseEntity.ok(Map.of("message", "Account, records, and uploaded files have been permanently erased."));
     }
 }
+

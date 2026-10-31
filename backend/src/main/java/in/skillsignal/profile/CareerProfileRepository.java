@@ -8,3 +8,4 @@ public interface CareerProfileRepository extends JpaRepository<CareerProfile, UU
     Optional<CareerProfile> findByUserId(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

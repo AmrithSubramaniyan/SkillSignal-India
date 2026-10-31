@@ -124,3 +124,4 @@ public class ConsentController {
         return ConsentDto.from(rec);
     }
 }
+

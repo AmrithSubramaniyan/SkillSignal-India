@@ -62,3 +62,4 @@ CREATE TABLE audit_logs (
 );
 
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+

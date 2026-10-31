@@ -12,3 +12,4 @@ public interface ResumeVersionRepository extends JpaRepository<ResumeVersion, UU
     long countByUserId(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

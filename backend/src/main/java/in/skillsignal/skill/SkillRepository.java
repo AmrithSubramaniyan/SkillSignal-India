@@ -9,3 +9,4 @@ public interface SkillRepository extends JpaRepository<Skill, UUID> {
     Optional<Skill> findByCanonicalNameIgnoreCase(String canonicalName);
     List<Skill> findByCategoryIgnoreCaseOrderByCanonicalNameAsc(String category);
 }
+

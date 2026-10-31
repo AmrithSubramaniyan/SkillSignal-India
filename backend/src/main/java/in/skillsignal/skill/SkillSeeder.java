@@ -56,3 +56,4 @@ public class SkillSeeder implements ApplicationRunner {
         }
     }
 }
+

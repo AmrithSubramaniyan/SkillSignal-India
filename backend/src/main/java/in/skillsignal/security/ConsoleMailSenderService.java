@@ -15,3 +15,4 @@ public class ConsoleMailSenderService implements MailSenderService {
         log.info("[DEV-MAIL] Dispatched password reset link to recipient {}", recipientEmail);
     }
 }
+

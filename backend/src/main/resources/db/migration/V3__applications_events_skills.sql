@@ -41,3 +41,4 @@ CREATE TABLE skills (
 );
 
 CREATE INDEX idx_skills_category ON skills(category);
+

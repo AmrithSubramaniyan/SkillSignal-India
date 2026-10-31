@@ -9,3 +9,4 @@ public interface ApplicationEventRepository extends JpaRepository<ApplicationEve
     List<ApplicationEvent> findByUserIdOrderByCreatedAtDesc(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

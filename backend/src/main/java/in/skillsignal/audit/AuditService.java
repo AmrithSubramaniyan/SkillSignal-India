@@ -32,3 +32,4 @@ public class AuditService {
         auditLogRepository.save(entry);
     }
 }
+

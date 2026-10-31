@@ -11,3 +11,4 @@ public interface ResumeRepository extends JpaRepository<Resume, UUID> {
     Optional<Resume> findFirstByUserIdOrderByCreatedAtDesc(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

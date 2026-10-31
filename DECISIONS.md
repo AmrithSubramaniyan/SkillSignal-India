@@ -39,3 +39,10 @@
 3. **Complete Data Export & Erasure**:
    - `GET /api/privacy/export` exports all user-owned entities as a single JSON document.
    - `DELETE /api/privacy/account` recursively removes `./uploads/{userId}` on disk (verified to stay inside `uploadRootDir`) and deletes all user database records.
+
+## Stage 5: Resume Upload, Magic-Byte Validation & Verified Skills
+1. **Strict File Validation & Path Isolation**:
+   - Verifies both file extension (`.pdf`, `.docx`) and binary magic bytes (`%PDF` for PDF, `PK\x03\x04` for DOCX), rejects files `> 5 MB` with 413, and rejects scanned/blank files (`< 10` readable chars) with 422 and a clear OCR-unsupported message.
+   - Files are stored under `./uploads/{userId}/{uuid}` using a server-generated UUID so user-supplied filenames can never cause path traversal.
+2. **Verified Skills Gate**:
+   - AI extraction populates `parsed_json`, and initializes `verified_skills_json`. Users can edit and save `verifiedSkills` and `yearsOfExperience` per version (up to 3 versions per user, 1 default). Only verified skills drive job match scoring.
