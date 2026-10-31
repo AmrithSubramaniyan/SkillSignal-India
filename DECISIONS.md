@@ -118,3 +118,12 @@
 3. **Mandatory User Approval & Binary Export**:
    - Users must explicitly approve a truthfulness-verified draft before downloading (`409 Conflict` if unapproved).
    - Exports valid binary PDF (Apache PDFBox 3) and DOCX (Apache POI) documents.
+
+## Stage 14: Full Tracker State Machine & Enriched Application Record (`E1`)
+1. **Explicit Transition Graph (`ApplicationStateMachine`)**:
+   - Enforces all legal transitions across `INTERESTED`, `READY_TO_APPLY`, `AWAITING_APPROVAL`, `APPLIED`, `SUBMISSION_FAILED`, `NEEDS_VERIFICATION`, `ASSESSMENT`, `INTERVIEW`, `ON_HOLD`, `OFFER`, `REJECTED`, `WITHDRAWN`, and `CLOSED` (while keeping backwards-compatible aliases `SAVED`, `PREPARING`, `APPLIED_CONFIRMED`, `INTERVIEWING`).
+   - Illegal transitions (e.g. `INTERESTED` -> `OFFER`, `CLOSED` -> `INTERVIEW`, `REJECTED` -> `OFFER`) are rejected with HTTP 422 (`UNPROCESSABLE_ENTITY`).
+2. **Confirmation Type & `NEEDS_VERIFICATION` Sub-State**:
+   - Transitioning to `APPLIED` with `confirmationType = UNCONFIRMED` automatically sets `sub_state = NEEDS_VERIFICATION` andWithholds `applied_at` until confirmed (`USER_CONFIRMED` or `EXTERNALLY_CONFIRMED`).
+3. **Rich Tracker Metadata (`V7__sprint3_tracker_reminders_companies.sql`)**:
+   - Stores `source`, `application_url`, `submission_method`, `confirmation_type`, `recruiter_contacts`, `assessment_date`, `interview_date`, `next_action`, and `follow_up_date` alongside status history drawer and filters in `TrackerPage.tsx`.

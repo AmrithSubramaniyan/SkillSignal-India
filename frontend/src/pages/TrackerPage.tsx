@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Card,
   Table,
@@ -8,11 +8,15 @@ import {
   Space,
   Typography,
   Modal,
+  Drawer,
   Timeline,
   Input,
+  Switch,
   Alert,
   Spin,
   Empty,
+  Row,
+  Col,
   Popconfirm,
   message,
 } from 'antd'
@@ -34,13 +38,23 @@ export interface ApplicationDto {
   company: string
   location: string
   workMode: string
+  source: string | null
+  applicationUrl: string | null
   resumeVersionId: string | null
   status: string
+  subState: string | null
   applyMode: string
+  submissionMethod: string
+  confirmationType: string
   notes: string | null
+  recruiterContacts: string | null
   appliedAt: string | null
+  assessmentDate: string | null
+  interviewDate: string | null
+  nextAction: string | null
   followUpDate: string | null
   matchScore: number | null
+  allowedNextStatuses: string[]
   createdAt: string
   updatedAt: string
 }
@@ -54,15 +68,21 @@ interface ApplicationEventDto {
 }
 
 const STATUS_OPTIONS = [
+  { label: 'Interested', value: 'INTERESTED', color: 'default' },
   { label: 'Saved', value: 'SAVED', color: 'default' },
-  { label: 'Preparing Pack', value: 'PREPARING', color: 'processing' },
   { label: 'Ready to Apply', value: 'READY_TO_APPLY', color: 'cyan' },
+  { label: 'Awaiting Approval', value: 'AWAITING_APPROVAL', color: 'gold' },
+  { label: 'Applied', value: 'APPLIED', color: 'blue' },
   { label: 'Applied (Confirmed)', value: 'APPLIED_CONFIRMED', color: 'blue' },
+  { label: 'Submission Failed', value: 'SUBMISSION_FAILED', color: 'error' },
   { label: 'Needs Verification', value: 'NEEDS_VERIFICATION', color: 'warning' },
-  { label: 'Interviewing', value: 'INTERVIEWING', color: 'purple' },
-  { label: 'Offer Received', value: 'OFFER', color: 'success' },
+  { label: 'Assessment', value: 'ASSESSMENT', color: 'geekblue' },
+  { label: 'Interview', value: 'INTERVIEW', color: 'purple' },
+  { label: 'On Hold', value: 'ON_HOLD', color: 'orange' },
+  { label: 'Offer', value: 'OFFER', color: 'success' },
   { label: 'Rejected', value: 'REJECTED', color: 'error' },
   { label: 'Withdrawn', value: 'WITHDRAWN', color: 'default' },
+  { label: 'Closed', value: 'CLOSED', color: 'default' },
 ]
 
 export function statusColor(status: string): string {
@@ -73,17 +93,31 @@ export default function TrackerPage() {
   const [apps, setApps] = useState<ApplicationDto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [eventsModalApp, setEventsModalApp] = useState<ApplicationDto | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('')
+  const [filterCompany, setFilterCompany] = useState<string>('')
+  const [filterNeedsVerification, setFilterNeedsVerification] = useState(false)
+
+  const [historyDrawerApp, setHistoryDrawerApp] = useState<ApplicationDto | null>(null)
   const [events, setEvents] = useState<ApplicationEventDto[]>([])
   const [loadingEvents, setLoadingEvents] = useState(false)
+
   const [editingApp, setEditingApp] = useState<ApplicationDto | null>(null)
   const [editNotes, setEditNotes] = useState('')
+  const [editRecruiter, setEditRecruiter] = useState('')
   const [editFollowUp, setEditFollowUp] = useState('')
+  const [editAssessmentDate, setEditAssessmentDate] = useState('')
+  const [editInterviewDate, setEditInterviewDate] = useState('')
+  const [editNextAction, setEditNextAction] = useState('')
+  const [editConfirmationType, setEditConfirmationType] = useState('USER_CONFIRMED')
 
   const loadApplications = async () => {
     setLoading(true)
     try {
-      const res = await apiClient.get<ApplicationDto[]>('/applications')
+      const params: Record<string, any> = {}
+      if (filterStatus) params.status = filterStatus
+      if (filterCompany.trim()) params.company = filterCompany.trim()
+      if (filterNeedsVerification) params.needsVerificationOnly = true
+      const res = await apiClient.get<ApplicationDto[]>('/applications', { params })
       setApps(res.data)
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to load application tracker.')
@@ -94,20 +128,26 @@ export default function TrackerPage() {
 
   useEffect(() => {
     loadApplications()
-  }, [])
+  }, [filterStatus, filterCompany, filterNeedsVerification])
 
-  const onStatusChange = async (appId: string, newStatus: string) => {
+  const onStatusChange = async (app: ApplicationDto, newStatus: string) => {
     try {
-      await apiClient.put(`/applications/${appId}`, { status: newStatus })
+      await apiClient.put(`/applications/${app.id}`, {
+        status: newStatus,
+        confirmationType:
+          newStatus === 'APPLIED' || newStatus === 'APPLIED_CONFIRMED'
+            ? 'USER_CONFIRMED'
+            : app.confirmationType,
+      })
       message.success(`Application status updated to ${newStatus}`)
       await loadApplications()
     } catch (err: any) {
-      message.error(err?.response?.data?.error || 'Failed to update status.')
+      message.error(err?.response?.data?.error || 'Illegal status transition blocked by state machine.')
     }
   }
 
   const onOpenHistory = async (app: ApplicationDto) => {
-    setEventsModalApp(app)
+    setHistoryDrawerApp(app)
     setLoadingEvents(true)
     try {
       const res = await apiClient.get<ApplicationEventDto[]>(`/applications/${app.id}/events`)
@@ -122,7 +162,12 @@ export default function TrackerPage() {
   const onOpenEdit = (app: ApplicationDto) => {
     setEditingApp(app)
     setEditNotes(app.notes || '')
+    setEditRecruiter(app.recruiterContacts || '')
     setEditFollowUp(app.followUpDate || '')
+    setEditAssessmentDate(app.assessmentDate || '')
+    setEditInterviewDate(app.interviewDate || '')
+    setEditNextAction(app.nextAction || '')
+    setEditConfirmationType(app.confirmationType || 'UNCONFIRMED')
   }
 
   const onSaveEdit = async () => {
@@ -130,9 +175,14 @@ export default function TrackerPage() {
     try {
       await apiClient.put(`/applications/${editingApp.id}`, {
         notes: editNotes,
+        recruiterContacts: editRecruiter,
         followUpDate: editFollowUp || null,
+        assessmentDate: editAssessmentDate || null,
+        interviewDate: editInterviewDate || null,
+        nextAction: editNextAction || null,
+        confirmationType: editConfirmationType,
       })
-      message.success('Notes and follow-up date updated!')
+      message.success('Application details updated!')
       setEditingApp(null)
       await loadApplications()
     } catch (err: any) {
@@ -150,28 +200,53 @@ export default function TrackerPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: 80 }}>
-        <Spin size="large" tip="Loading application tracker..." />
-      </div>
-    )
-  }
-
   return (
-    <div style={{ maxWidth: 1120, margin: '24px auto', padding: '0 24px' }}>
+    <div style={{ maxWidth: 1220, margin: '24px auto', padding: '0 24px' }}>
       <Card>
         <Title level={3} style={{ marginTop: 0 }}>
-          Application Tracker & Follow-Ups
+          My Applications (Full State-Machine Tracker)
         </Title>
         <Paragraph type="secondary">
-          Track every application from Saved to Offer. In accordance with SkillSignal safety rules, applications are never marked submitted automatically — uncertain portal states are flagged as <Tag color="warning">NEEDS_VERIFICATION</Tag> for you to verify and resolve.
+          Legal status transitions are strictly enforced by the backend state machine. Applications are never marked submitted automatically — unconfirmed submissions enter sub-state <Tag color="warning">NEEDS_VERIFICATION</Tag> until you confirm.
         </Paragraph>
+
+        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+          <Col xs={24} sm={8}>
+            <Select
+              allowClear
+              style={{ width: '100%' }}
+              placeholder="Filter by Status"
+              value={filterStatus || undefined}
+              onChange={(val) => setFilterStatus(val || '')}
+              options={STATUS_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+            />
+          </Col>
+          <Col xs={24} sm={8}>
+            <Input
+              allowClear
+              placeholder="Filter by Company..."
+              value={filterCompany}
+              onChange={(e) => setFilterCompany(e.target.value)}
+            />
+          </Col>
+          <Col xs={24} sm={8} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Switch
+              size="small"
+              checked={filterNeedsVerification}
+              onChange={(checked) => setFilterNeedsVerification(checked)}
+            />
+            <Text>Needs Verification Only</Text>
+          </Col>
+        </Row>
 
         {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}
 
-        {apps.length === 0 ? (
-          <Empty description="No applications tracked yet. Go to 'Jobs & Match' and click 'Save to Tracker' on any role." />
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <Spin size="large" />
+          </div>
+        ) : apps.length === 0 ? (
+          <Empty description="No matching applications in tracker." />
         ) : (
           <Table
             rowKey="id"
@@ -179,62 +254,74 @@ export default function TrackerPage() {
             pagination={{ pageSize: 10 }}
             columns={[
               {
-                title: 'Role & Company',
+                title: 'Role, Company & Source',
                 key: 'role',
                 render: (_, r) => (
                   <div>
                     <Text strong>{r.jobTitle}</Text>
                     <div>
                       <Text type="secondary">
-                        {r.company} {r.location ? `• ${r.location}` : ''} {r.workMode ? `(${r.workMode})` : ''}
+                        {r.company} {r.location ? `• ${r.location}` : ''} ({r.source || 'manual'})
                       </Text>
                     </div>
                   </div>
                 ),
               },
               {
-                title: 'Match Estimate',
-                dataIndex: 'matchScore',
-                render: (score: number | null) =>
-                  score !== null ? (
-                    <Tag color={score >= 75 ? 'success' : score >= 50 ? 'warning' : 'error'}>{score}%</Tag>
-                  ) : (
-                    <Text type="secondary">—</Text>
-                  ),
+                title: 'Status & Confirmation',
+                dataIndex: 'status',
+                render: (val: string, r) => {
+                  const allowedSet = new Set([val, ...(r.allowedNextStatuses || [])])
+                  const filteredOptions = STATUS_OPTIONS.filter((o) => allowedSet.has(o.value))
+                  return (
+                    <Space direction="vertical" size={4}>
+                      <Select
+                        size="small"
+                        style={{ width: 190 }}
+                        value={val}
+                        onChange={(newVal) => onStatusChange(r, newVal)}
+                        options={filteredOptions.map((o) => ({ label: o.label, value: o.value }))}
+                      />
+                      <Space size={4} wrap>
+                        <Tag color={r.confirmationType === 'UNCONFIRMED' ? 'default' : 'green'}>
+                          {r.confirmationType}
+                        </Tag>
+                        {(val === 'NEEDS_VERIFICATION' || r.subState === 'NEEDS_VERIFICATION') && (
+                          <Tag icon={<ExclamationCircleOutlined />} color="warning">
+                            Needs Verification
+                          </Tag>
+                        )}
+                      </Space>
+                    </Space>
+                  )
+                },
               },
               {
-                title: 'Status',
-                dataIndex: 'status',
-                render: (val: string, r) => (
-                  <Space direction="vertical" size={4}>
-                    <Select
-                      size="small"
-                      style={{ width: 185 }}
-                      value={val}
-                      onChange={(newVal) => onStatusChange(r.id, newVal)}
-                      options={STATUS_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-                    />
-                    {val === 'NEEDS_VERIFICATION' && (
-                      <Tag icon={<ExclamationCircleOutlined />} color="warning">
-                        Verify submission manually
-                      </Tag>
-                    )}
+                title: 'Key Dates & Next Action',
+                key: 'dates',
+                render: (_, r) => (
+                  <Space direction="vertical" size={2}>
+                    {r.followUpDate && <Tag color="geekblue">Follow-Up: {r.followUpDate}</Tag>}
+                    {r.assessmentDate && <Tag color="cyan">Assessment: {r.assessmentDate}</Tag>}
+                    {r.interviewDate && <Tag color="purple">Interview: {r.interviewDate}</Tag>}
+                    {r.nextAction && <Text type="secondary" style={{ fontSize: 12 }}>Next: {r.nextAction}</Text>}
                   </Space>
                 ),
               },
               {
-                title: 'Follow-Up Date',
-                dataIndex: 'followUpDate',
-                render: (date: string | null) => {
-                  if (!date) return <Text type="secondary">Not set</Text>
-                  const isDue = date <= new Date().toISOString().slice(0, 10)
-                  return <Tag color={isDue ? 'volcano' : 'geekblue'}>{date}{isDue ? ' (Due)' : ''}</Tag>
-                },
-              },
-              {
-                title: 'Notes',
-                dataIndex: 'notes',
-                ellipsis: true,
+                title: 'Recruiter & Notes',
+                key: 'notes',
+                render: (_, r) => (
+                  <div>
+                    {r.recruiterContacts && (
+                      <div>
+                        <Text strong style={{ fontSize: 12 }}>Recruiter: </Text>
+                        <Text style={{ fontSize: 12 }}>{r.recruiterContacts}</Text>
+                      </div>
+                    )}
+                    <Text type="secondary" style={{ fontSize: 12 }}>{r.notes || '—'}</Text>
+                  </div>
+                ),
               },
               {
                 title: 'Actions',
@@ -242,7 +329,7 @@ export default function TrackerPage() {
                 render: (_, r) => (
                   <Space>
                     <Button size="small" icon={<EditOutlined />} onClick={() => onOpenEdit(r)}>
-                      Edit
+                      Details
                     </Button>
                     <Button size="small" icon={<HistoryOutlined />} onClick={() => onOpenHistory(r)}>
                       History
@@ -258,11 +345,11 @@ export default function TrackerPage() {
         )}
       </Card>
 
-      <Modal
-        title={`Status History: ${eventsModalApp?.jobTitle || ''}`}
-        open={!!eventsModalApp}
-        onCancel={() => setEventsModalApp(null)}
-        footer={null}
+      <Drawer
+        title={`Status History: ${historyDrawerApp?.jobTitle || ''} @ ${historyDrawerApp?.company || ''}`}
+        open={!!historyDrawerApp}
+        onClose={() => setHistoryDrawerApp(null)}
+        width={420}
       >
         {loadingEvents ? (
           <Spin />
@@ -286,29 +373,83 @@ export default function TrackerPage() {
             }))}
           />
         )}
-      </Modal>
+      </Drawer>
 
       <Modal
-        title={`Update Notes & Follow-Up: ${editingApp?.jobTitle || ''}`}
+        title={`Edit Application Details: ${editingApp?.jobTitle || ''}`}
         open={!!editingApp}
         onCancel={() => setEditingApp(null)}
         onOk={onSaveEdit}
         okText="Save Changes"
+        width={620}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Row gutter={12}>
+            <Col span={12}>
+              <Text strong>Confirmation Type:</Text>
+              <Select
+                style={{ width: '100%', marginTop: 4 }}
+                value={editConfirmationType}
+                onChange={(val) => setEditConfirmationType(val)}
+                options={[
+                  { label: 'USER_CONFIRMED', value: 'USER_CONFIRMED' },
+                  { label: 'EXTERNALLY_CONFIRMED', value: 'EXTERNALLY_CONFIRMED' },
+                  { label: 'UNCONFIRMED (Needs Verification)', value: 'UNCONFIRMED' },
+                ]}
+              />
+            </Col>
+            <Col span={12}>
+              <Text strong>Next Action:</Text>
+              <Input
+                value={editNextAction}
+                onChange={(e) => setEditNextAction(e.target.value)}
+                placeholder="e.g., Send follow-up note"
+                style={{ marginTop: 4 }}
+              />
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Text strong>Follow-Up Date:</Text>
+              <Input
+                type="date"
+                value={editFollowUp}
+                onChange={(e) => setEditFollowUp(e.target.value)}
+                style={{ marginTop: 4 }}
+              />
+            </Col>
+            <Col span={8}>
+              <Text strong>Assessment Date:</Text>
+              <Input
+                type="date"
+                value={editAssessmentDate}
+                onChange={(e) => setEditAssessmentDate(e.target.value)}
+                style={{ marginTop: 4 }}
+              />
+            </Col>
+            <Col span={8}>
+              <Text strong>Interview Date:</Text>
+              <Input
+                type="date"
+                value={editInterviewDate}
+                onChange={(e) => setEditInterviewDate(e.target.value)}
+                style={{ marginTop: 4 }}
+              />
+            </Col>
+          </Row>
           <div>
-            <Text strong>Follow-Up Date (YYYY-MM-DD):</Text>
+            <Text strong>Recruiter Contacts (User-Supplied):</Text>
             <Input
-              type="date"
-              value={editFollowUp}
-              onChange={(e) => setEditFollowUp(e.target.value)}
+              value={editRecruiter}
+              onChange={(e) => setEditRecruiter(e.target.value)}
+              placeholder="Name, email, or LinkedIn URL provided by you"
               style={{ marginTop: 4 }}
             />
           </div>
           <div>
             <Text strong>Application Notes:</Text>
             <TextArea
-              rows={4}
+              rows={3}
               value={editNotes}
               onChange={(e) => setEditNotes(e.target.value)}
               style={{ marginTop: 4 }}
@@ -319,4 +460,3 @@ export default function TrackerPage() {
     </div>
   )
 }
-
