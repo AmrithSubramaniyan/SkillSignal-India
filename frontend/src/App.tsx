@@ -32,6 +32,7 @@ import CompaniesPage from './pages/CompaniesPage'
 import AutoApplySettingsPage from './pages/AutoApplySettingsPage'
 import AssistedApplyPage from './pages/AssistedApplyPage'
 import ApprovalQueuePage from './pages/ApprovalQueuePage'
+import AutoApplyCentrePage from './pages/AutoApplyCentrePage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 
@@ -132,6 +133,11 @@ function AppShell() {
                   key: '/approval-queue',
                   icon: <CheckSquareOutlined />,
                   label: <Link to="/approval-queue">Approval Queue</Link>,
+                },
+                {
+                  key: '/auto-apply-centre',
+                  icon: <SafetyCertificateOutlined />,
+                  label: <Link to="/auto-apply-centre">Auto-Apply Centre</Link>,
                 },
                 {
                   key: '/auto-apply-settings',
@@ -259,6 +265,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <ApprovalQueuePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/auto-apply-centre"
+            element={
+              <ProtectedRoute>
+                <AutoApplyCentrePage />
               </ProtectedRoute>
             }
           />

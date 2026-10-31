@@ -230,4 +230,12 @@
    - Never stores or transmits portal passwords, cookies, or session tokens (any payload containing `password`, `cookie`, or `sessionToken` is rejected with HTTP 400).
    - `FILL_ONLY` mode fills answers and uploads the resume, then stops before final Submit (`submitClicks == 0`). Missing confirmation signals route strictly to `NEEDS_VERIFICATION` without auto-retrying.
 
+## Stage 29: Learning Loop & Auto-Apply Centre (`F18, F19`, `sprint5-v1`)
+1. **Personal Learning Loop & Consent-Gated Rule Suggestions (`LearningAndCentreService`)**:
+   - Computes response rates by resume version, role title, company tier (`T1`/`T2`/`T3`), and source strictly from the user's own stored applications with explicit sample sizes (`sampleSize`).
+   - Rule-change suggestions (`rule_change_suggestions`) default to `PENDING_USER_CONSENT` and are rejected with HTTP 422 if `consentGranted != true`.
+2. **Auto-Apply Centre (`AutoApplyCentrePage.tsx` & `GET /api/auto-apply/centre`)**:
+   - Consolidates funnel counts, daily/weekly rate-limit meters, per-source status & circuit breaker state, active blockers waiting for user intervention, skip-reason feedback, big emergency `STOP` button, and an explicitly labelled time-saved estimate (`15 mins per prepared pack`).
+
+
 
