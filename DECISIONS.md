@@ -159,3 +159,11 @@
    - `FREE_TEXT` questions never auto-fill silently; they require a pre-approved template or explicit user approval.
    - `LEGAL_CONSENT` and `UNKNOWN` questions **always** set `requiresUserPause = true` and `autoFillAllowed = false`.
    - Unanswered or expired questions set `offerToSaveNewAnswer = true`.
+
+## Stage 19: Application Pack Builder & Readiness Routing (`F6, F7`)
+1. **Immutable Snapshot & 3-Tone Grounded Notes (`ApplicationPackService`)**:
+   - Captures `jobSnapshot` + SHA-256 `jobSnapshotHash` and `resumeHash`.
+   - Generates `formal`, `concise`, and `enthusiastic` cover notes grounded strictly in the candidate's verified skills and experience, and verifies notes + answers through `TruthfulnessVerifier`.
+2. **Readiness Score (`0–100`) & Review Queue Routing**:
+   - Combines Match (`0–40`), Answer Coverage (`0–25`), Resume Fit & Truthfulness (`0–20`), and Freshness (`0–15`).
+   - Any pack below the user's readiness threshold (default `70`), with paused/unanswered questions, stale job listing, missing resume, or truthfulness failure sets `routesToReviewQueue = true`.
