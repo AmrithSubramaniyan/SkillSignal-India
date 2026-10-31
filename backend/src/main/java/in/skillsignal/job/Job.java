@@ -44,6 +44,12 @@ public class Job {
     @Column(name = "min_years_experience")
     private Double minYearsExperience;
 
+    @Column(name = "max_years_experience")
+    private Double maxYearsExperience;
+
+    @Column(name = "country", length = 100)
+    private String country = "India";
+
     @Column(name = "source", nullable = false, length = 100)
     private String source = "manual";
 
@@ -132,6 +138,10 @@ public class Job {
     public void setNiceToHaveSkillsJson(String niceToHaveSkillsJson) { this.niceToHaveSkillsJson = niceToHaveSkillsJson; }
     public Double getMinYearsExperience() { return minYearsExperience; }
     public void setMinYearsExperience(Double minYearsExperience) { this.minYearsExperience = minYearsExperience; }
+    public Double getMaxYearsExperience() { return maxYearsExperience; }
+    public void setMaxYearsExperience(Double maxYearsExperience) { this.maxYearsExperience = maxYearsExperience; }
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
     public String getExternalJobId() { return externalJobId; }

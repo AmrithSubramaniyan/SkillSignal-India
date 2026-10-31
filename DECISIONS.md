@@ -149,3 +149,13 @@
 ## Stage 17: Full Dashboard (`E7`) & Sprint 3 Close (`sprint3-v1`)
 1. **Unified Action & Pipeline Dashboard (`GET /api/dashboard` & `DashboardPage.tsx`)**:
    - Aggregates **Today's Actions** (due/overdue follow-up dates, due/overdue reminders from `reminders`, and applications awaiting approval/verification), **Upcoming Interviews & Assessments**, **Awaiting Approval & Verification**, **High-Match Jobs (`>= 75%` estimated match)**, and **Auto-Apply Status** (`"Assisted Apply (Default — No unapproved auto-submission)"`), while preserving the labelled-estimates disclaimer.
+
+## Stage 18: Question Classifier & Answer Library (`F4, F5`)
+1. **Six-Category Classifier (`QuestionClassifierAndAnswerService`)**:
+   - Classifies screening questions into `FACTUAL`, `PREFERENCE`, `NUMERIC`, `LEGAL_CONSENT`, `FREE_TEXT`, and `UNKNOWN`.
+   - Any question touching legal declarations, criminal/background checks, visa/work authorisation, non-compete/NDA disclosures, salary history/last drawn CTC, or demographic attributes is deterministically classified as `LEGAL_CONSENT`.
+2. **Strict Auto-Fill vs Mandatory Pause Rules**:
+   - Auto-fill (`autoFillAllowed = true`, `requiresUserPause = false`) is permitted **ONLY** for `FACTUAL` and `PREFERENCE` questions that have a non-expired exact `approved_answer` in `answer_library`.
+   - `FREE_TEXT` questions never auto-fill silently; they require a pre-approved template or explicit user approval.
+   - `LEGAL_CONSENT` and `UNKNOWN` questions **always** set `requiresUserPause = true` and `autoFillAllowed = false`.
+   - Unanswered or expired questions set `offerToSaveNewAnswer = true`.
