@@ -145,3 +145,7 @@
 2. **Evidence Strictly from Stored Jobs & Mandatory Disclaimer**:
    - `CompanyIntelligenceService` computes 30/60/90-day job counts, distinct roles, distinct locations, and disclosed salary ranges (`"not enough data"` when undisclosed) strictly from the user's own stored `Job` records.
    - Every response and UI banner prominently displays `"Listings are not hires — computed strictly from your own stored job listings."`
+
+## Stage 17: Full Dashboard (`E7`) & Sprint 3 Close (`sprint3-v1`)
+1. **Unified Action & Pipeline Dashboard (`GET /api/dashboard` & `DashboardPage.tsx`)**:
+   - Aggregates **Today's Actions** (due/overdue follow-up dates, due/overdue reminders from `reminders`, and applications awaiting approval/verification), **Upcoming Interviews & Assessments**, **Awaiting Approval & Verification**, **High-Match Jobs (`>= 75%` estimated match)**, and **Auto-Apply Status** (`"Assisted Apply (Default — No unapproved auto-submission)"`), while preserving the labelled-estimates disclaimer.

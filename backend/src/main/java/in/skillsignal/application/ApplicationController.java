@@ -5,6 +5,8 @@ import in.skillsignal.job.Job;
 import in.skillsignal.job.JobRepository;
 import in.skillsignal.match.JobMatch;
 import in.skillsignal.match.JobMatchRepository;
+import in.skillsignal.reminder.Reminder;
+import in.skillsignal.reminder.ReminderRepository;
 import in.skillsignal.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -117,6 +119,7 @@ public class ApplicationController {
     private final ApplicationStateMachine stateMachine;
     private final JobRepository jobRepository;
     private final JobMatchRepository jobMatchRepository;
+    private final ReminderRepository reminderRepository;
     private final AuditService auditService;
 
     public ApplicationController(
@@ -125,6 +128,7 @@ public class ApplicationController {
             ApplicationStateMachine stateMachine,
             JobRepository jobRepository,
             JobMatchRepository jobMatchRepository,
+            ReminderRepository reminderRepository,
             AuditService auditService
     ) {
         this.applicationRepository = applicationRepository;
@@ -132,6 +136,7 @@ public class ApplicationController {
         this.stateMachine = stateMachine;
         this.jobRepository = jobRepository;
         this.jobMatchRepository = jobMatchRepository;
+        this.reminderRepository = reminderRepository;
         this.auditService = auditService;
     }
 
@@ -398,6 +403,20 @@ public class ApplicationController {
                     "title", aw.status() + ": " + aw.jobTitle() + " @ " + aw.company(),
                     "dueDate", today.toString()
             ));
+        }
+
+        Instant now = Instant.now();
+        for (Reminder rem : reminderRepository.findByUserIdOrderByDueAtAsc(principal.id())) {
+            if (!"COMPLETED".equalsIgnoreCase(rem.getStatus())
+                    && !rem.getDueAt().isAfter(now)
+                    && (rem.getSnoozedUntil() == null || !rem.getSnoozedUntil().isAfter(now))) {
+                todaysActions.add(Map.of(
+                        "type", "REMINDER_DUE",
+                        "reminderId", rem.getId(),
+                        "title", "[" + rem.getReminderType() + "] " + rem.getTitle(),
+                        "dueDate", rem.getDueAt().toString()
+                ));
+            }
         }
 
         List<JobMatch> matches = jobMatchRepository.findByUserIdOrderByCreatedAtDesc(principal.id());

@@ -25,11 +25,11 @@
 - [x] **STAGE 14: FULL TRACKER (E1)** — Statuses (`INTERESTED`, `READY_TO_APPLY`, `AWAITING_APPROVAL`, `APPLIED`, `SUBMISSION_FAILED`, `ASSESSMENT`, `INTERVIEW`, `ON_HOLD`, `OFFER`, `REJECTED`, `WITHDRAWN`, `CLOSED`, sub-state `NEEDS_VERIFICATION`), `ApplicationStateMachine` legal transition enforcement, enriched fields (source, URL, submission method, recruiter contacts, assessment/interview dates, next action, confirmation type `USER_CONFIRMED` / `EXTERNALLY_CONFIRMED` / `UNCONFIRMED`), `My Applications` screen (table, filters, history drawer).
 - [x] **STAGE 15: REMINDERS + NOTIFICATIONS (E2, E3, E4)** — Follow-up, assessment, interview, offer reminders; snooze, reschedule, complete, overdue list; per-user time zone (default `Asia/Kolkata`); in-app notification list; daily summary email via mail abstraction; sent-log preventing duplicates; quiet hours (two time fields); AI follow-up email draft (user sends); never treat silence as rejection; `Reminders and Calendar` and `Notifications` screens.
 - [x] **STAGE 16: COMPANIES (E5, E6)** — `T1`/`T2`/`T3` tier dropdown, priority list, evidence computed strictly from user's own stored jobs (30/60/90 days, roles, locations, disclosed salary) with visible note `"listings are not hires"`, `Companies` and `Hiring Intelligence (lite)` screens.
-- [ ] **STAGE 17: DASHBOARD FULL (E7)** — Today's actions, upcoming interviews, awaiting approval, high-match jobs, auto-apply status; Sprint 3 test suite (every transition, reminder boundaries, no duplicate notifications, quiet hours); tag `sprint3-v1`.
+- [x] **STAGE 17: DASHBOARD FULL (E7)** — Today's actions, upcoming interviews, awaiting approval, high-match jobs, auto-apply status; Sprint 3 test suite (every transition, reminder boundaries, no duplicate notifications, quiet hours, `27/27` JUnit tests passing); tag `sprint3-v1`.
 
 ## Current Status
-- **Current Stage**: Stage 17 — Dashboard Full (`E7`) & Sprint 3 Close (`sprint3-v1`)
-- **Last Commit**: Stage 16 (`feat(stage-16): add target companies T1/T2/T3 tiers, priority list, and 30/60/90d stored-job hiring intelligence`)
-- **Next Step**: Complete Stage 17 (`DashboardPage.tsx` full action widgets, due reminders integration in `GET /api/dashboard`, full test suite + build, tag `sprint3-v1`).
+- **Current Stage**: Sprint 3 Complete (`sprint3-v1`)
+- **Last Commit**: Stage 17 (`feat(stage-17): complete full dashboard action widgets, Sprint 3 test suite, and close Sprint 3 (sprint3-v1)`)
+- **Next Step**: Ready for Sprint 4 or user evaluation (5–10 real users).
 - **Open GATES**:
   - **GATE G3 (RESOLVED)**: User confirmed building the Greenhouse Public Job Board API read-only GET connector (`Assisted Apply` only) and keeping Naukri, LinkedIn, Indeed, Foundit, Instahyre, and Wellfound disabled.

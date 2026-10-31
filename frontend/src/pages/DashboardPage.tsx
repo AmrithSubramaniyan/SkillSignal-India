@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Card,
   Row,
@@ -21,6 +21,9 @@ import {
   BellOutlined,
   RightOutlined,
   ExclamationCircleOutlined,
+  CalendarOutlined,
+  SafetyCertificateOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../api/client'
@@ -35,12 +38,32 @@ interface HealthResponse {
   dbTime: string
 }
 
+interface ActionItem {
+  type: string
+  applicationId?: string
+  reminderId?: string
+  title: string
+  dueDate: string
+}
+
+interface HighMatchJobItem {
+  jobId: string
+  title: string
+  company: string
+  score: number
+}
+
 interface DashboardSummaryDto {
   totalJobs: number
   totalApplications: number
   statusCounts: Record<string, number>
   followUpsDueCount: number
   followUpsDue: ApplicationDto[]
+  upcomingInterviews: ApplicationDto[]
+  awaitingApproval: ApplicationDto[]
+  todaysActions: ActionItem[]
+  highMatchJobs: HighMatchJobItem[]
+  autoApplyStatus: string
   estimatedAverageMatchScore: number | null
   metricsDisclaimer: string
 }
@@ -77,7 +100,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1120, margin: '24px auto', padding: '0 24px' }}>
+    <div style={{ maxWidth: 1240, margin: '24px auto', padding: '0 24px' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -89,16 +112,23 @@ export default function DashboardPage() {
                 Search once. Find relevant jobs. Apply smarter. Track every application. Follow up on time.
               </Paragraph>
             </div>
-            {health && (
-              <Space wrap>
-                <Tag icon={<CheckCircleOutlined />} color="success">
-                  API: {health.status}
+            <Space wrap>
+              {dashboard?.autoApplyStatus && (
+                <Tag icon={<SafetyCertificateOutlined />} color="blue">
+                  Auto-Apply Mode: {dashboard.autoApplyStatus}
                 </Tag>
-                <Tag icon={<DatabaseOutlined />} color="processing">
-                  DB Time: {health.dbTime}
-                </Tag>
-              </Space>
-            )}
+              )}
+              {health && (
+                <>
+                  <Tag icon={<CheckCircleOutlined />} color="success">
+                    API: {health.status}
+                  </Tag>
+                  <Tag icon={<DatabaseOutlined />} color="processing">
+                    DB Time: {health.dbTime}
+                  </Tag>
+                </>
+              )}
+            </Space>
           </div>
           {error && <Alert type="error" showIcon message={error} style={{ marginTop: 16 }} />}
         </Card>
@@ -139,14 +169,16 @@ export default function DashboardPage() {
               <Col xs={24} sm={12} md={6}>
                 <Card>
                   <Statistic
-                    title="Follow-Ups Due"
-                    value={dashboard.followUpsDueCount}
-                    valueStyle={{ color: dashboard.followUpsDueCount > 0 ? '#cf1322' : undefined }}
+                    title="Today's Actions"
+                    value={dashboard.todaysActions?.length ?? dashboard.followUpsDueCount}
+                    valueStyle={{
+                      color: (dashboard.todaysActions?.length ?? 0) > 0 ? '#cf1322' : undefined,
+                    }}
                     prefix={<BellOutlined />}
                   />
-                  <Link to="/tracker">
+                  <Link to="/reminders">
                     <Button type="link" size="small" style={{ paddingLeft: 0 }}>
-                      Review Follow-Ups <RightOutlined />
+                      Open Reminders <RightOutlined />
                     </Button>
                   </Link>
                 </Card>
@@ -170,12 +202,172 @@ export default function DashboardPage() {
               </Col>
             </Row>
 
+            {/* Stage 17 Full Dashboard Panels */}
             <Row gutter={[16, 16]}>
               <Col xs={24} md={12}>
+                <Card
+                  title={
+                    <Space>
+                      <ThunderboltOutlined />
+                      <span>Today&apos;s Actions ({dashboard.todaysActions?.length || 0})</span>
+                    </Space>
+                  }
+                  extra={<Link to="/reminders">All Reminders</Link>}
+                >
+                  {!dashboard.todaysActions || dashboard.todaysActions.length === 0 ? (
+                    <Empty description="No immediate actions due today." />
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={dashboard.todaysActions}
+                      renderItem={(act) => (
+                        <List.Item
+                          actions={[
+                            <Tag key="type" color="volcano">
+                              {act.type}
+                            </Tag>,
+                          ]}
+                        >
+                          <List.Item.Meta
+                            title={<Text strong>{act.title}</Text>}
+                            description={`Due: ${act.dueDate}`}
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </Card>
+              </Col>
+
+              <Col xs={24} md={12}>
+                <Card
+                  title={
+                    <Space>
+                      <CalendarOutlined />
+                      <span>Upcoming Interviews & Assessments ({dashboard.upcomingInterviews?.length || 0})</span>
+                    </Space>
+                  }
+                  extra={<Link to="/tracker">View Tracker</Link>}
+                >
+                  {!dashboard.upcomingInterviews || dashboard.upcomingInterviews.length === 0 ? (
+                    <Empty description="No upcoming interviews or assessments scheduled." />
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={dashboard.upcomingInterviews}
+                      renderItem={(app) => (
+                        <List.Item
+                          actions={[
+                            <Tag key="st" color={statusColor(app.status)}>
+                              {app.status}
+                            </Tag>,
+                          ]}
+                        >
+                          <List.Item.Meta
+                            title={
+                              <Space>
+                                <Text strong>{app.jobTitle}</Text>
+                                <Tag color="blue">{app.company}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space size="middle">
+                                {app.assessmentDate && <Text type="secondary">Assessment: {app.assessmentDate}</Text>}
+                                {app.interviewDate && <Text type="secondary">Interview: {app.interviewDate}</Text>}
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Card
+                  title={
+                    <Space>
+                      <ExclamationCircleOutlined />
+                      <span>Awaiting Approval & Verification ({dashboard.awaitingApproval?.length || 0})</span>
+                    </Space>
+                  }
+                  extra={<Link to="/tracker">Resolve in Tracker</Link>}
+                >
+                  {!dashboard.awaitingApproval || dashboard.awaitingApproval.length === 0 ? (
+                    <Empty description="No applications awaiting approval or verification." />
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={dashboard.awaitingApproval}
+                      renderItem={(app) => (
+                        <List.Item
+                          actions={[
+                            <Tag key="st" color="orange">
+                              {app.subState === 'NEEDS_VERIFICATION' ? 'NEEDS_VERIFICATION' : app.status}
+                            </Tag>,
+                          ]}
+                        >
+                          <List.Item.Meta
+                            title={
+                              <Space>
+                                <Text strong>{app.jobTitle}</Text>
+                                <Tag color="blue">{app.company}</Tag>
+                              </Space>
+                            }
+                            description={app.notes || 'Requires user confirmation or verification'}
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </Card>
+              </Col>
+
+              <Col xs={24} md={12}>
+                <Card
+                  title={
+                    <Space>
+                      <AimOutlined />
+                      <span>High-Match Jobs (≥ 75% Estimated Match) ({dashboard.highMatchJobs?.length || 0})</span>
+                    </Space>
+                  }
+                  extra={<Link to="/jobs">Jobs & Match</Link>}
+                >
+                  {!dashboard.highMatchJobs || dashboard.highMatchJobs.length === 0 ? (
+                    <Empty description="Compute job matches on the Jobs & Match page to see high-match roles." />
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={dashboard.highMatchJobs}
+                      renderItem={(hm) => (
+                        <List.Item
+                          actions={[
+                            <Tag key="score" color="green">
+                              {hm.score}% Est. Match
+                            </Tag>,
+                          ]}
+                        >
+                          <List.Item.Meta
+                            title={<Text strong>{hm.title}</Text>}
+                            description={hm.company}
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24}>
                 <Card title="Application Pipeline Breakdown">
                   <Space wrap size={[8, 12]}>
                     {Object.entries(dashboard.statusCounts).map(([status, count]) => (
-                      <Card.Grid key={status} style={{ width: '33.33%', textAlign: 'center', padding: 12 }}>
+                      <Card.Grid key={status} style={{ width: '16.66%', minWidth: 140, textAlign: 'center', padding: 12 }}>
                         <div>
                           <Tag color={statusColor(status)}>{status}</Tag>
                         </div>
@@ -187,55 +379,6 @@ export default function DashboardPage() {
                   </Space>
                 </Card>
               </Col>
-
-              <Col xs={24} md={12}>
-                <Card
-                  title={
-                    <Space>
-                      <BellOutlined />
-                      <span>Follow-Ups Due Today / Overdue ({dashboard.followUpsDueCount})</span>
-                    </Space>
-                  }
-                  extra={<Link to="/tracker">View All</Link>}
-                >
-                  {dashboard.followUpsDue.length === 0 ? (
-                    <Empty description="No overdue or due follow-ups today." />
-                  ) : (
-                    <List
-                      dataSource={dashboard.followUpsDue}
-                      renderItem={(item) => (
-                        <List.Item
-                          actions={[
-                            <Tag key="due" color="volcano">
-                              Due: {item.followUpDate}
-                            </Tag>,
-                          ]}
-                        >
-                          <List.Item.Meta
-                            title={
-                              <Space>
-                                <Text strong>{item.jobTitle}</Text>
-                                <Tag color="blue">{item.company}</Tag>
-                                <Tag
-                                  icon={
-                                    item.status === 'NEEDS_VERIFICATION' ? (
-                                      <ExclamationCircleOutlined />
-                                    ) : undefined
-                                  }
-                                  color={statusColor(item.status)}
-                                >
-                                  {item.status}
-                                </Tag>
-                              </Space>
-                            }
-                            description={item.notes}
-                          />
-                        </List.Item>
-                      )}
-                    />
-                  )}
-                </Card>
-              </Col>
             </Row>
           </>
         )}
@@ -243,4 +386,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
