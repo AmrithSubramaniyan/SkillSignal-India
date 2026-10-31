@@ -167,3 +167,11 @@
 2. **Readiness Score (`0–100`) & Review Queue Routing**:
    - Combines Match (`0–40`), Answer Coverage (`0–25`), Resume Fit & Truthfulness (`0–20`), and Freshness (`0–15`).
    - Any pack below the user's readiness threshold (default `70`), with paused/unanswered questions, stale job listing, missing resume, or truthfulness failure sets `routesToReviewQueue = true`.
+
+## Stage 20: Strict Match Rule & 9-Check Eligibility Evaluator (`F1–F3`)
+1. **Strict Match Rule (`StrictEligibilityService`)**:
+   - **Skills**: Requires `matchedSkills >= MIN_SKILLS` (default `3`, configurable) AND `>= 50%` required-skill coverage (recommended guard ON by default). If the job lists `< MIN_SKILLS` skills, **all** listed skills must match; if the job lists `0` skills, it routes to the Review Queue.
+   - **Experience**: Below minimum -> `NO`; above stated maximum -> per `overQualifiedPolicy` (default `BLOCK`); no experience stated on job -> `REVIEW` by default.
+2. **The 9 Eligibility Checks & `"Why Applied / Why Skipped"`**:
+   - Evaluates (1) listing accessible/open, (2) criteria + Strict Match Rule, (3) no duplicate within cooldown, (4) approved resume exists, (5) all questions supported/answerable, (6) not on exclusion lists, (7) provider capability permits method, (8) daily/weekly caps, global pause/stop & source enabled, and (9) readiness threshold & truthfulness check. Any failure routes to the Review Queue and never auto-submits.
+   - Verified across 44 fixtures spanning 8 industries and 4 experience bands (`0, 2, 5, 12` years), confirming that `2` matched skills fails and `3` matched skills passes when `MIN_SKILLS = 3`.

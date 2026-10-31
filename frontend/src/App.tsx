@@ -27,6 +27,7 @@ import TrackerPage from './pages/TrackerPage'
 import RemindersPage from './pages/RemindersPage'
 import NotificationsPage from './pages/NotificationsPage'
 import CompaniesPage from './pages/CompaniesPage'
+import AutoApplySettingsPage from './pages/AutoApplySettingsPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 
@@ -117,6 +118,11 @@ function AppShell() {
                   key: '/companies',
                   icon: <BankOutlined />,
                   label: <Link to="/companies">Companies</Link>,
+                },
+                {
+                  key: '/auto-apply-settings',
+                  icon: <SafetyCertificateOutlined />,
+                  label: <Link to="/auto-apply-settings">Apply Rules</Link>,
                 },
                 {
                   key: '/profile',
@@ -223,6 +229,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <CompaniesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/auto-apply-settings"
+            element={
+              <ProtectedRoute>
+                <AutoApplySettingsPage />
               </ProtectedRoute>
             }
           />
