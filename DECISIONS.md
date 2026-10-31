@@ -71,3 +71,12 @@
 2. **Security Headers & CI Pipeline**:
    - Enforces `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`.
    - Added `.github/workflows/ci.yml` running backend Maven tests on JDK 17 and frontend TypeScript/Vite build on Node 20.
+
+## Stage 9: Source Registry & Greenhouse Public Job-Board Connector (GATE G3)
+1. **Source Capability Registry (`source_capabilities` table, V4 migration)**:
+   - Seeds 9 rows: enabled `manual` (`USER_INPUT`), `company_ats` (`PUBLIC_BOARD_API`), `email_apply` (`OAUTH_SMTP`), plus disabled rows for `naukri`, `linkedin`, `indeed`, `foundit`, `instahyre`, and `wellfound` marked `access_method = no verified API access`.
+   - Every source defaults to `ASSISTED_APPLY` in `allowed_actions`.
+   - Admin switch (`PUT /api/sources/capabilities/{source}/admin-switch`) requires `ROLE_ADMIN`, prevents enabling sources marked `"no verified API access"`, and forces `ASSISTED_APPLY` as the default action.
+2. **GATE G3 & Greenhouse Public Job Board API Connector (`GreenhousePublicBoardConnector`)**:
+   - Reviewed Greenhouse Developer Docs (`GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true`) and confirmed read-only job retrieval requires no authentication or scraping.
+   - Built `GreenhousePublicBoardConnector` with a 5-second HTTP timeout, offline fixture support (`fixture-india-tech`, `fixture-healthcare`, `fixture-finance`) for deterministic tests/offline development, and a slow/failing simulation board (`timeout-board`, `error-board`) for testing orchestrator resilience.
