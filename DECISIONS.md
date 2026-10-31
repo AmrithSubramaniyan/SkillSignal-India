@@ -207,6 +207,15 @@
 2. **Dry Run Guarantee (`dry_run=true`)**:
    - `POST /api/auto-apply/runs?dry_run=true` and `POST /api/auto-apply/rules/{id}/simulate` evaluate all stored jobs, compute `"Would have matched N of M jobs"`, and persist the `AutoApplyRun` preview while creating **zero** `ApplicationSubmission` and **zero** `Application` records.
 
+## Stage 25: Email-Apply with Encrypted OAuth & Sent-Not-Confirmed Semantics (`F13`)
+1. **AES-256-GCM Encrypted OAuth Token Reference & Zero Password Policy (`EmailApplyService`)**:
+   - Rejects any request containing a password field (`HTTP 400`).
+   - Encrypts the OAuth access token reference using AES-256-GCM (`app.mailbox.encryption-key`) before persisting in `connected_mailboxes.encrypted_token_ref`. Tokens are excluded from DTOs, `toString()`, and `audit_logs`. Disconnecting a mailbox immediately sets `status = "REVOKED"` and wipes `encrypted_token_ref`.
+2. **Approval Gate & `"Sent"` (Not Confirmed) Semantics**:
+   - Sending an email application (`POST /api/email-apply/messages/{id}/send`) requires `approvedByUser = true` (`HTTP 422` otherwise).
+   - Once sent, the message status is `"SENT"` and the tracker `Application` is placed in `NEEDS_VERIFICATION` (`confirmationType = "UNCONFIRMED"`) until an acknowledgement is detected in the user's mailbox (when `ackDetectionEnabled = true`) to upgrade to `EXTERNALLY_CONFIRMED`.
+
+
 
 
 
