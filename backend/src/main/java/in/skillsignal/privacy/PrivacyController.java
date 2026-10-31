@@ -1,5 +1,6 @@
 package in.skillsignal.privacy;
 
+import in.skillsignal.answer.AnswerLibraryRepository;
 import in.skillsignal.application.ApplicationEventRepository;
 import in.skillsignal.application.ApplicationRepository;
 import in.skillsignal.audit.AuditLog;
@@ -7,8 +8,10 @@ import in.skillsignal.audit.AuditLogRepository;
 import in.skillsignal.audit.AuditService;
 import in.skillsignal.company.CompanyRepository;
 import in.skillsignal.consent.ConsentRecordRepository;
+import in.skillsignal.eligibility.AutoApplyPreferenceRepository;
 import in.skillsignal.job.JobRepository;
 import in.skillsignal.match.JobMatchRepository;
+import in.skillsignal.pack.ApplicationPackRepository;
 import in.skillsignal.profile.CareerProfileRepository;
 import in.skillsignal.reminder.NotificationRepository;
 import in.skillsignal.reminder.NotificationSentLogRepository;
@@ -20,6 +23,9 @@ import in.skillsignal.resume.TailoredResumeRepository;
 import in.skillsignal.search.SavedSearchRepository;
 import in.skillsignal.security.AuthController;
 import in.skillsignal.security.AuthenticatedUser;
+import in.skillsignal.submission.ApplicationSubmissionAttemptRepository;
+import in.skillsignal.submission.ApplicationSubmissionRepository;
+import in.skillsignal.submission.IdempotencyKeyRepository;
 import in.skillsignal.user.User;
 import in.skillsignal.user.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +68,12 @@ public class PrivacyController {
     private final NotificationSentLogRepository notificationSentLogRepository;
     private final UserNotificationPreferenceRepository preferenceRepository;
     private final CompanyRepository companyRepository;
+    private final AnswerLibraryRepository answerLibraryRepository;
+    private final ApplicationPackRepository applicationPackRepository;
+    private final AutoApplyPreferenceRepository autoApplyPreferenceRepository;
+    private final IdempotencyKeyRepository idempotencyKeyRepository;
+    private final ApplicationSubmissionRepository submissionRepository;
+    private final ApplicationSubmissionAttemptRepository submissionAttemptRepository;
     private final AuditService auditService;
     private final Path uploadRootDir;
 
@@ -83,6 +95,12 @@ public class PrivacyController {
             NotificationSentLogRepository notificationSentLogRepository,
             UserNotificationPreferenceRepository preferenceRepository,
             CompanyRepository companyRepository,
+            AnswerLibraryRepository answerLibraryRepository,
+            ApplicationPackRepository applicationPackRepository,
+            AutoApplyPreferenceRepository autoApplyPreferenceRepository,
+            IdempotencyKeyRepository idempotencyKeyRepository,
+            ApplicationSubmissionRepository submissionRepository,
+            ApplicationSubmissionAttemptRepository submissionAttemptRepository,
             AuditService auditService,
             @Value("${app.uploads.dir:./uploads}") String uploadDir
     ) {
@@ -103,6 +121,12 @@ public class PrivacyController {
         this.notificationSentLogRepository = notificationSentLogRepository;
         this.preferenceRepository = preferenceRepository;
         this.companyRepository = companyRepository;
+        this.answerLibraryRepository = answerLibraryRepository;
+        this.applicationPackRepository = applicationPackRepository;
+        this.autoApplyPreferenceRepository = autoApplyPreferenceRepository;
+        this.idempotencyKeyRepository = idempotencyKeyRepository;
+        this.submissionRepository = submissionRepository;
+        this.submissionAttemptRepository = submissionAttemptRepository;
         this.auditService = auditService;
         this.uploadRootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
@@ -142,6 +166,9 @@ public class PrivacyController {
         export.put("notifications", notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("notificationPreferences", preferenceRepository.findById(user.getId()).orElse(null));
         export.put("companies", companyRepository.findByUserIdOrderByPriorityDescNameAsc(user.getId()));
+        export.put("answerLibrary", answerLibraryRepository.findByUserIdOrderByUpdatedAtDesc(user.getId()));
+        export.put("autoApplyPreferences", autoApplyPreferenceRepository.findById(user.getId()).orElse(null));
+        export.put("submissions", submissionRepository.findByUserIdOrderByUpdatedAtDesc(user.getId()));
         export.put("auditLogs", auditLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         return export;
     }
@@ -170,6 +197,12 @@ public class PrivacyController {
         }
 
         // 2. Delete all user records
+        submissionAttemptRepository.deleteByUserId(user.getId());
+        submissionRepository.deleteByUserId(user.getId());
+        idempotencyKeyRepository.deleteByUserId(user.getId());
+        autoApplyPreferenceRepository.deleteByUserId(user.getId());
+        applicationPackRepository.deleteByUserId(user.getId());
+        answerLibraryRepository.deleteByUserId(user.getId());
         companyRepository.deleteByUserId(user.getId());
         notificationSentLogRepository.deleteByUserId(user.getId());
         notificationRepository.deleteByUserId(user.getId());

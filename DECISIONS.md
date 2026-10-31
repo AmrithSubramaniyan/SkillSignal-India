@@ -191,4 +191,14 @@
    - Supports `GET /api/approval-queue`, `POST /{id}/approve|reject|skip`, `PUT /{id}/answers`, `POST /batch-approve` (with `exceptionIds` excluded), freshness & expiry re-check (automatically transitioning stale/expired items to `EXPIRED`), and single-use expiring approval links (`POST /{id}/send-approval-link` storing only the SHA-256 hash and `POST /approve-by-token` requiring authentication and rejecting reuse with HTTP 409).
    - In Sprint 4, approving an item leads strictly to the user-submits path (`READY_TO_APPLY` with `ASSISTED` mode).
 
+## Stage 23: Safety Basic, Auto Follow-Up & Sprint 4 Close (`F16 basic, F17`, `sprint4-v1`)
+1. **Concurrency, Caps, Time-Zone Rollover & Global Stop Safety (`Stage23SafetyConcurrencyCapsAndFollowUpTest`)**:
+   - Concurrent approvals (`CompletableFuture` across 8 threads) are serialized and idempotent so they produce **exactly one** tracker `Application`.
+   - Daily (`5/day`) and weekly (`20/week`) caps roll over at midnight/Monday in the user's configured time zone (`Asia/Kolkata` default).
+   - Transitioning global auto-apply state to `STOPPED` requires explicit typed confirmation `"STOP"`.
+2. **Auto-Created Follow-Up Reminder & Email Draft After `Applied` (`F17`)**:
+   - Whenever an application reaches `APPLIED` (via `"I applied"` confirmation in Mode 1, `Needs Verification` resolution, or tracker update), SkillSignal automatically creates a +7 day `FOLLOW_UP` reminder populated with the generated follow-up email draft.
+   - All Sprint 4 tables (`answer_library`, `application_packs`, `auto_apply_preferences`, `idempotency_keys`, `application_submissions`, `application_submission_attempts`) are integrated into `GET /api/privacy/export` and `DELETE /api/privacy/account`.
+
+
 

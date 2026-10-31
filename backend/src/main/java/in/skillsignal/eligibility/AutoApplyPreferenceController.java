@@ -86,7 +86,7 @@ public class AutoApplyPreferenceController {
         return toDto(updated);
     }
 
-    @PostMapping("/global-state")
+    @PostMapping({"/global-state", "/preferences/global-state"})
     public AutoApplyPreferenceDto updateGlobalState(
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestBody GlobalStateRequest req

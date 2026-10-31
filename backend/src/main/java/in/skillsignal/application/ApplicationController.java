@@ -6,6 +6,7 @@ import in.skillsignal.job.JobRepository;
 import in.skillsignal.match.JobMatch;
 import in.skillsignal.match.JobMatchRepository;
 import in.skillsignal.reminder.Reminder;
+import in.skillsignal.reminder.ReminderAndNotificationService;
 import in.skillsignal.reminder.ReminderRepository;
 import in.skillsignal.security.AuthenticatedUser;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @RestController
@@ -120,6 +122,7 @@ public class ApplicationController {
     private final JobRepository jobRepository;
     private final JobMatchRepository jobMatchRepository;
     private final ReminderRepository reminderRepository;
+    private final ReminderAndNotificationService reminderService;
     private final AuditService auditService;
 
     public ApplicationController(
@@ -129,6 +132,7 @@ public class ApplicationController {
             JobRepository jobRepository,
             JobMatchRepository jobMatchRepository,
             ReminderRepository reminderRepository,
+            ReminderAndNotificationService reminderService,
             AuditService auditService
     ) {
         this.applicationRepository = applicationRepository;
@@ -137,6 +141,7 @@ public class ApplicationController {
         this.jobRepository = jobRepository;
         this.jobMatchRepository = jobMatchRepository;
         this.reminderRepository = reminderRepository;
+        this.reminderService = reminderService;
         this.auditService = auditService;
     }
 
@@ -315,7 +320,30 @@ public class ApplicationController {
 
         app = applicationRepository.save(app);
         Job job = jobRepository.findByIdAndUserId(app.getJobId(), principal.id()).orElse(null);
+        if (("APPLIED".equals(newStatus) || "APPLIED_CONFIRMED".equals(newStatus))
+                && outcome.effectiveSubState() == null
+                && job != null) {
+            ensureFollowUpReminderAndDraft(principal.id(), app, job);
+        }
         return toDto(app, job);
+    }
+
+    private void ensureFollowUpReminderAndDraft(UUID userId, Application app, Job job) {
+        final UUID appId = app.getId();
+        boolean hasFollowUpReminder = reminderRepository.findByUserIdOrderByDueAtAsc(userId).stream()
+                .anyMatch(r -> appId.equals(r.getApplicationId()) && "FOLLOW_UP".equalsIgnoreCase(r.getReminderType()));
+        if (!hasFollowUpReminder) {
+            ReminderAndNotificationService.FollowUpDraftDto draft = reminderService.generateFollowUpEmailDraft(userId, appId);
+            Reminder rem = new Reminder();
+            rem.setUserId(userId);
+            rem.setApplicationId(appId);
+            rem.setReminderType("FOLLOW_UP");
+            rem.setTitle("Follow up on " + job.getTitle() + " at " + job.getCompany());
+            rem.setDueAt(Instant.now().plus(7, ChronoUnit.DAYS));
+            rem.setStatus("PENDING");
+            rem.setNotes("Auto-generated follow-up draft:\nSubject: " + draft.subject() + "\n\n" + draft.body());
+            reminderRepository.save(rem);
+        }
     }
 
     @GetMapping("/applications/{id}/events")
