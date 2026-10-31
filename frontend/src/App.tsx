@@ -15,6 +15,8 @@ import {
   CalendarOutlined,
   BellOutlined,
   BankOutlined,
+  SendOutlined,
+  CheckSquareOutlined,
 } from '@ant-design/icons'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
@@ -28,6 +30,8 @@ import RemindersPage from './pages/RemindersPage'
 import NotificationsPage from './pages/NotificationsPage'
 import CompaniesPage from './pages/CompaniesPage'
 import AutoApplySettingsPage from './pages/AutoApplySettingsPage'
+import AssistedApplyPage from './pages/AssistedApplyPage'
+import ApprovalQueuePage from './pages/ApprovalQueuePage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 
@@ -118,6 +122,16 @@ function AppShell() {
                   key: '/companies',
                   icon: <BankOutlined />,
                   label: <Link to="/companies">Companies</Link>,
+                },
+                {
+                  key: '/assisted-apply',
+                  icon: <SendOutlined />,
+                  label: <Link to="/assisted-apply">Assisted Apply</Link>,
+                },
+                {
+                  key: '/approval-queue',
+                  icon: <CheckSquareOutlined />,
+                  label: <Link to="/approval-queue">Approval Queue</Link>,
                 },
                 {
                   key: '/auto-apply-settings',
@@ -229,6 +243,22 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <CompaniesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assisted-apply"
+            element={
+              <ProtectedRoute>
+                <AssistedApplyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/approval-queue"
+            element={
+              <ProtectedRoute>
+                <ApprovalQueuePage />
               </ProtectedRoute>
             }
           />

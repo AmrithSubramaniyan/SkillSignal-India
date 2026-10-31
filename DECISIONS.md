@@ -184,3 +184,11 @@
    - Every preparation request is keyed by `(user_id, idempotency_key)` so duplicate calls return the existing submission without duplicating state transitions.
    - Every state transition writes an immutable `ApplicationSubmissionAttempt` row capturing `from_state`, `to_state`, `rule_decision_json`, `resume_hash`, `answers_used_json`, `pack_snapshot_json`, `provider_response`, `actor`, and `created_at`.
 
+## Stage 22: Modes 1 & 2 — Assisted Apply & Approval Queue (`F8, F9, F10`)
+1. **Mode 1 Assisted Apply (`AssistedApplyPage.tsx` & `/confirm-assisted-applied`)**:
+   - Displays the truthfulness-verified pack preview, readiness score (`0–100`), cover notes in 3 tones (`formal`, `concise`, `enthusiastic`) with one-click copy buttons, screening answers with category/confidence/source and copy buttons, `"Open Original Page"`, and `"I Applied"` button which sets `SUBMITTED_CONFIRMED` and tracker `APPLIED` (`USER_CONFIRMED`).
+2. **Mode 2 Approval Queue (`ApprovalQueueController` & `ApprovalQueuePage.tsx`)**:
+   - Supports `GET /api/approval-queue`, `POST /{id}/approve|reject|skip`, `PUT /{id}/answers`, `POST /batch-approve` (with `exceptionIds` excluded), freshness & expiry re-check (automatically transitioning stale/expired items to `EXPIRED`), and single-use expiring approval links (`POST /{id}/send-approval-link` storing only the SHA-256 hash and `POST /approve-by-token` requiring authentication and rejecting reuse with HTTP 409).
+   - In Sprint 4, approving an item leads strictly to the user-submits path (`READY_TO_APPLY` with `ASSISTED` mode).
+
+
