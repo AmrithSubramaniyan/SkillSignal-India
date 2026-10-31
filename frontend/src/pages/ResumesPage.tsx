@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Card,
   Upload,
@@ -9,11 +9,15 @@ import {
   Space,
   Select,
   InputNumber,
+  Input,
   Alert,
   Spin,
   Empty,
   Collapse,
   Popconfirm,
+  Row,
+  Col,
+  Divider,
   message,
 } from 'antd'
 import {
@@ -23,10 +27,15 @@ import {
   FileTextOutlined,
   SaveOutlined,
   StarOutlined,
+  HighlightOutlined,
+  SafetyCertificateOutlined,
+  DownloadOutlined,
+  StopOutlined,
 } from '@ant-design/icons'
 import { apiClient } from '../api/client'
 
 const { Title, Paragraph, Text } = Typography
+const { TextArea } = Input
 
 export interface ResumeVersionDto {
   id: string
@@ -54,9 +63,39 @@ interface SkillSummaryDto {
   category: string
 }
 
+interface JobSummaryOption {
+  id: string
+  title: string
+  company: string
+}
+
+interface TailoredResumeDto {
+  id: string
+  resumeVersionId: string
+  jobId: string
+  jobTitle: string
+  jobCompany: string
+  keywordGaps: string[]
+  tips: string[]
+  originalText: string
+  tailoredText: string
+  diff: Array<{ section: string; changeType: string; before: string; after: string }>
+  truthfulnessPassed: boolean
+  unsupportedClaims: string[]
+  claimTraces: Array<{ claim: string; category: string; status: string; sourceEvidence: string }>
+  userApproved: boolean
+  approvedAt: string | null
+  createdAt: string
+}
+
 export default function ResumesPage() {
   const [versions, setVersions] = useState<ResumeVersionDto[]>([])
   const [skillCatalog, setSkillCatalog] = useState<SkillSummaryDto[]>([])
+  const [jobs, setJobs] = useState<JobSummaryOption[]>([])
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const [tailored, setTailored] = useState<TailoredResumeDto | null>(null)
+  const [draftEditText, setDraftEditText] = useState<string>('')
+  const [tailoringLoading, setTailoringLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -67,12 +106,17 @@ export default function ResumesPage() {
   const loadResumes = async () => {
     setLoading(true)
     try {
-      const [vRes, sRes] = await Promise.all([
+      const [vRes, sRes, jRes] = await Promise.all([
         apiClient.get<ResumeVersionDto[]>('/resumes/versions'),
         apiClient.get<SkillSummaryDto[]>('/skills'),
+        apiClient.get<JobSummaryOption[]>('/jobs').catch(() => ({ data: [] })),
       ])
       setVersions(vRes.data)
       setSkillCatalog(sRes.data)
+      setJobs(jRes.data)
+      if (jRes.data.length > 0 && !selectedJobId) {
+        setSelectedJobId(jRes.data[0].id)
+      }
       const skillsMap: Record<string, string[]> = {}
       const yearsMap: Record<string, number> = {}
       vRes.data.forEach((v) => {
@@ -147,6 +191,75 @@ export default function ResumesPage() {
     }
   }
 
+  const handleCreateTailoredDraft = async () => {
+    if (!selectedJobId) {
+      message.warning('Please select a target job first')
+      return
+    }
+    setTailoringLoading(true)
+    try {
+      const res = await apiClient.post<TailoredResumeDto>('/resumes/tailor', {
+        jobId: selectedJobId,
+      })
+      setTailored(res.data)
+      setDraftEditText(res.data.tailoredText)
+      message.success('Generated tailored draft and verified truthfulness!')
+    } catch (err: any) {
+      message.error(err?.response?.data?.error || 'Could not generate tailored resume')
+    } finally {
+      setTailoringLoading(false)
+    }
+  }
+
+  const handleVerifyEditedDraft = async () => {
+    if (!tailored) return
+    setTailoringLoading(true)
+    try {
+      const res = await apiClient.put<TailoredResumeDto>(`/resumes/tailor/${tailored.id}`, {
+        tailoredText: draftEditText,
+      })
+      setTailored(res.data)
+      if (res.data.truthfulnessPassed) {
+        message.success('Truthfulness check passed! Every claim traces back to your resume or profile.')
+      } else {
+        message.error('Truthfulness check BLOCKED unsupported claims.')
+      }
+    } catch (err: any) {
+      message.error(err?.response?.data?.error || 'Failed to update tailored draft')
+    } finally {
+      setTailoringLoading(false)
+    }
+  }
+
+  const handleApproveDraft = async () => {
+    if (!tailored) return
+    try {
+      const res = await apiClient.post<TailoredResumeDto>(`/resumes/tailor/${tailored.id}/approve`)
+      setTailored(res.data)
+      message.success('Tailored resume approved! You can now download PDF or DOCX.')
+    } catch (err: any) {
+      message.error(err?.response?.data?.error || 'Truthfulness check blocked approval')
+    }
+  }
+
+  const handleDownload = async (format: 'pdf' | 'docx') => {
+    if (!tailored) return
+    try {
+      const res = await apiClient.get(`/resumes/tailor/${tailored.id}/download?format=${format}`, {
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `tailored-resume-${tailored.id}.${format}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (err: any) {
+      message.error('Approve the tailored draft before downloading')
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', marginTop: 80 }}>
@@ -156,16 +269,16 @@ export default function ResumesPage() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: '24px auto', padding: '0 24px' }}>
+    <div style={{ maxWidth: 1080, margin: '24px auto', padding: '0 24px' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <Title level={3} style={{ margin: 0 }}>
-                <FileTextOutlined /> Resume Versions & Verified Skills
+                <FileTextOutlined /> Resume Versions, Tailoring Studio & Truthfulness Check
               </Title>
               <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-                Upload PDF or DOCX resumes (max 5 MB, up to 3 versions). Review and verify extracted skills — only verified skills count toward job match scores.
+                Upload PDF or DOCX resumes (max 5 MB, up to 3 versions), verify skills, and generate job-tailored drafts with automatic claim traceability.
               </Paragraph>
             </div>
             <Upload
@@ -187,6 +300,152 @@ export default function ResumesPage() {
 
           {error && <Alert type="error" showIcon message={error} closable onClose={() => setError(null)} style={{ marginTop: 16 }} />}
         </Card>
+
+        {versions.length > 0 && (
+          <Card
+            title={
+              <Space>
+                <HighlightOutlined />
+                <span>Resume Tailoring Studio & Truthfulness Gate (B4–B6)</span>
+              </Space>
+            }
+          >
+            <Space wrap style={{ marginBottom: 16 }}>
+              <Text strong>Target Job:</Text>
+              <Select
+                style={{ minWidth: 320 }}
+                placeholder="Select a job to tailor your default resume for"
+                value={selectedJobId || undefined}
+                onChange={(val) => setSelectedJobId(val)}
+                options={jobs.map((j) => ({
+                  value: j.id,
+                  label: `${j.title} @ ${j.company}`,
+                }))}
+              />
+              <Button
+                type="primary"
+                icon={<HighlightOutlined />}
+                loading={tailoringLoading}
+                onClick={handleCreateTailoredDraft}
+              >
+                Generate Tailored Draft & Keyword Gaps
+              </Button>
+            </Space>
+
+            {tailored && (
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Alert
+                  type={tailored.truthfulnessPassed ? 'success' : 'error'}
+                  showIcon
+                  icon={tailored.truthfulnessPassed ? <SafetyCertificateOutlined /> : <StopOutlined />}
+                  message={
+                    tailored.truthfulnessPassed
+                      ? 'Truthfulness Check PASSED — Every skill, degree, and experience claim traces back to your verified resume or profile.'
+                      : 'Truthfulness Check BLOCKED — Unsupported claims detected! Approval and export are disabled until unsupported claims are removed.'
+                  }
+                  description={
+                    !tailored.truthfulnessPassed && (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {tailored.unsupportedClaims.map((uc, idx) => (
+                          <li key={idx}>{uc}</li>
+                        ))}
+                      </ul>
+                    )
+                  }
+                />
+
+                <Row gutter={16}>
+                  <Col xs={24} md={12}>
+                    <Card size="small" title="Keyword Gap List (Missing from Resume)">
+                      {tailored.keywordGaps.length === 0 ? (
+                        <Tag color="success">No keyword gaps — all job skills covered!</Tag>
+                      ) : (
+                        <Space wrap>
+                          {tailored.keywordGaps.map((kw) => (
+                            <Tag key={kw} color="volcano">
+                              {kw}
+                            </Tag>
+                          ))}
+                        </Space>
+                      )}
+                    </Card>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Card size="small" title="3 Actionable Tailoring Tips">
+                      <ol style={{ margin: 0, paddingLeft: 18 }}>
+                        {tailored.tips.map((tip, idx) => (
+                          <li key={idx}>{tip}</li>
+                        ))}
+                      </ol>
+                    </Card>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col xs={24} md={12}>
+                    <Text strong>Original Resume Text (Before):</Text>
+                    <TextArea
+                      rows={8}
+                      readOnly
+                      value={tailored.originalText}
+                      style={{ marginTop: 6, background: '#fafafa' }}
+                    />
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Text strong>Tailored Draft (After — Reworded & Reordered Only):</Text>
+                    <TextArea
+                      rows={8}
+                      value={draftEditText}
+                      onChange={(e) => setDraftEditText(e.target.value)}
+                      style={{ marginTop: 6 }}
+                    />
+                  </Col>
+                </Row>
+
+                <div>
+                  <Text strong>Claim Traceability Log: </Text>
+                  <Space wrap style={{ marginTop: 6 }}>
+                    {tailored.claimTraces.map((ct, idx) => (
+                      <Tag key={idx} color={ct.status === 'SUPPORTED' ? 'green' : 'red'}>
+                        {ct.claim} [{ct.category}: {ct.status} — {ct.sourceEvidence}]
+                      </Tag>
+                    ))}
+                  </Space>
+                </div>
+
+                <Divider style={{ margin: '8px 0' }} />
+
+                <Space wrap>
+                  <Button onClick={handleVerifyEditedDraft} loading={tailoringLoading}>
+                    Re-Run Truthfulness Check on Edits
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    disabled={!tailored.truthfulnessPassed || tailored.userApproved}
+                    onClick={handleApproveDraft}
+                  >
+                    {tailored.userApproved ? 'Approved by User' : 'Approve Tailored Draft'}
+                  </Button>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    disabled={!tailored.userApproved || !tailored.truthfulnessPassed}
+                    onClick={() => handleDownload('pdf')}
+                  >
+                    Download PDF
+                  </Button>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    disabled={!tailored.userApproved || !tailored.truthfulnessPassed}
+                    onClick={() => handleDownload('docx')}
+                  >
+                    Download DOCX
+                  </Button>
+                </Space>
+              </Space>
+            )}
+          </Card>
+        )}
 
         {versions.length === 0 ? (
           <Card>
@@ -303,4 +562,3 @@ export default function ResumesPage() {
     </div>
   )
 }
-

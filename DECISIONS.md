@@ -108,3 +108,13 @@
    - `GET /api/jobs/missing-skills-summary` aggregates missing required skills across all saved jobs sorted by job frequency.
    - `POST /api/jobs/compare` compares 2 to 3 user-selected jobs side-by-side.
    - `PUT /api/jobs/{id}/match/feedback` stores `THUMBS_UP` / `THUMBS_DOWN` and optional notes on `job_matches`.
+
+## Stage 13: Resume Tailoring Studio, Truthfulness Verifier & DOCX/PDF Export
+1. **Reword & Reorder Only (`ResumeTailoringService`)**:
+   - Tailored drafts prioritize sentences from the candidate's existing extracted resume text that match the target job's required/nice-to-have skills, while computing a keyword gap list, 3 actionable tips, and a structured before/after diff.
+2. **Deterministic Truthfulness Gate (`TruthfulnessVerifier`)**:
+   - Inspects every skill, degree (`Ph.D`, `M.Tech`, `B.Tech`, `MBA`, `MBBS`, `CA`, `LLB`, etc.), and years-of-experience claim in the draft and traces each back to `ResumeVersion` (`extractedText`, `verifiedSkillsJson`, `yearsOfExperience`) or `CareerProfile`.
+   - Any claim not supported by the candidate's resume or profile sets `truthfulness_passed = false` and **blocks** both approval (`POST /api/resumes/tailor/{id}/approve` -> 422) and export (`GET /api/resumes/tailor/{id}/download` -> 422).
+3. **Mandatory User Approval & Binary Export**:
+   - Users must explicitly approve a truthfulness-verified draft before downloading (`409 Conflict` if unapproved).
+   - Exports valid binary PDF (Apache PDFBox 3) and DOCX (Apache POI) documents.

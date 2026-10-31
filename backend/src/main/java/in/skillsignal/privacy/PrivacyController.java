@@ -11,6 +11,8 @@ import in.skillsignal.match.JobMatchRepository;
 import in.skillsignal.profile.CareerProfileRepository;
 import in.skillsignal.resume.ResumeRepository;
 import in.skillsignal.resume.ResumeVersionRepository;
+import in.skillsignal.resume.TailoredResumeRepository;
+import in.skillsignal.search.SavedSearchRepository;
 import in.skillsignal.security.AuthController;
 import in.skillsignal.security.AuthenticatedUser;
 import in.skillsignal.user.User;
@@ -48,6 +50,8 @@ public class PrivacyController {
     private final ApplicationRepository applicationRepository;
     private final ApplicationEventRepository applicationEventRepository;
     private final AuditLogRepository auditLogRepository;
+    private final SavedSearchRepository savedSearchRepository;
+    private final TailoredResumeRepository tailoredResumeRepository;
     private final AuditService auditService;
     private final Path uploadRootDir;
 
@@ -62,6 +66,8 @@ public class PrivacyController {
             ApplicationRepository applicationRepository,
             ApplicationEventRepository applicationEventRepository,
             AuditLogRepository auditLogRepository,
+            SavedSearchRepository savedSearchRepository,
+            TailoredResumeRepository tailoredResumeRepository,
             AuditService auditService,
             @Value("${app.uploads.dir:./uploads}") String uploadDir
     ) {
@@ -75,6 +81,8 @@ public class PrivacyController {
         this.applicationRepository = applicationRepository;
         this.applicationEventRepository = applicationEventRepository;
         this.auditLogRepository = auditLogRepository;
+        this.savedSearchRepository = savedSearchRepository;
+        this.tailoredResumeRepository = tailoredResumeRepository;
         this.auditService = auditService;
         this.uploadRootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
@@ -108,6 +116,8 @@ public class PrivacyController {
         export.put("jobMatches", jobMatchRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("applications", applicationRepository.findByUserIdOrderByUpdatedAtDesc(user.getId()));
         export.put("applicationEvents", applicationEventRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("savedSearches", savedSearchRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("tailoredResumes", tailoredResumeRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("auditLogs", auditLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         return export;
     }
@@ -136,6 +146,8 @@ public class PrivacyController {
         }
 
         // 2. Delete all user records
+        tailoredResumeRepository.deleteByUserId(user.getId());
+        savedSearchRepository.deleteByUserId(user.getId());
         applicationEventRepository.deleteByUserId(user.getId());
         applicationRepository.deleteByUserId(user.getId());
         jobMatchRepository.deleteByUserId(user.getId());
