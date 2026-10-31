@@ -57,3 +57,10 @@
    - Experience: 20 pts (full 20 if `resumeYears >= required`, scaled below, neutral 10 if unstated).
    - Location/Work mode: 10 pts (supports Indian city aliases like Bangalore/Bengaluru and Gurgaon/Gurugram).
    - Always emits 3 conditional suggestions (never advising users to claim skills they lack) and the mandatory disclaimer.
+
+## Stage 7: Application Tracker, Dashboard & Demo Seeder
+1. **Application Status Safety & Event Trail**:
+   - Applications default to `SAVED` (`applyMode = ASSISTED`) and are never marked submitted automatically; uncertain portal outcomes use `NEEDS_VERIFICATION` for manual user resolution.
+   - Duplicate `(user_id, job_id)` returns HTTP 409 Conflict, and every status transition records an `ApplicationEvent`.
+2. **Demo Data Seeder (`APP_SEED_DEMO=true`)**:
+   - `DemoDataSeeder` creates `demo@skillsignal.test` (`DemoPass123!`), 1 verified resume, 4 jobs spanning high (~100%), good (~85%), partial (~55%), and low (~14%) match levels, and 3 tracked applications including due follow-ups.

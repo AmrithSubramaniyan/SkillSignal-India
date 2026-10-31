@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { Layout, Menu, Card, Typography, Tag, Spin, Alert, Space, Button } from 'antd'
+import { Layout, Menu, Tag, Spin, Space, Button } from 'antd'
 import {
-  CheckCircleOutlined,
-  DatabaseOutlined,
   LogoutOutlined,
   DashboardOutlined,
   UserOutlined,
@@ -11,23 +9,18 @@ import {
   SafetyCertificateOutlined,
   FileTextOutlined,
   AimOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { apiClient } from './api/client'
 import LoginPage from './pages/LoginPage'
-import ProfilePage from './pages/ProfilePage'
-import PrivacyPage from './pages/PrivacyPage'
+import DashboardPage from './pages/DashboardPage'
 import ResumesPage from './pages/ResumesPage'
 import JobsPage from './pages/JobsPage'
+import TrackerPage from './pages/TrackerPage'
+import ProfilePage from './pages/ProfilePage'
+import PrivacyPage from './pages/PrivacyPage'
 
 const { Header, Content } = Layout
-const { Title, Paragraph, Text } = Typography
-
-interface HealthResponse {
-  status: string
-  service?: string
-  dbTime: string
-}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -42,62 +35,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />
   }
   return <>{children}</>
-}
-
-function HomeStatusView() {
-  const { user } = useAuth()
-  const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    apiClient
-      .get<HealthResponse>('/health')
-      .then((res) => {
-        setHealth(res.data)
-        setLoading(false)
-      })
-      .catch((err) => {
-        setError(err?.response?.data?.error || err.message || 'Unable to reach /api/health')
-        setLoading(false)
-      })
-  }, [])
-
-  return (
-    <div style={{ maxWidth: 840, margin: '32px auto', padding: '0 24px' }}>
-      <Card>
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Title level={3} style={{ margin: 0 }}>
-            Welcome, {user?.fullName || 'Job Seeker'}
-          </Title>
-          <Paragraph type="secondary" style={{ marginBottom: 4 }}>
-            Search once. Find relevant jobs. Apply smarter. Track every application. Follow up on time.
-          </Paragraph>
-
-          <Card size="small" title="System Health (/api/health)">
-            {loading && <Spin tip="Checking backend and database..." />}
-            {error && <Alert type="error" showIcon message="Backend Unreachable" description={error} />}
-            {health && (
-              <Space wrap size="large">
-                <div>
-                  <Text strong>Backend Status: </Text>
-                  <Tag icon={<CheckCircleOutlined />} color="success">
-                    {health.status}
-                  </Tag>
-                </div>
-                <div>
-                  <Text strong>Database Timestamp: </Text>
-                  <Tag icon={<DatabaseOutlined />} color="processing">
-                    {health.dbTime}
-                  </Tag>
-                </div>
-              </Space>
-            )}
-          </Card>
-        </Space>
-      </Card>
-    </div>
-  )
 }
 
 function AppShell() {
@@ -142,6 +79,11 @@ function AppShell() {
                   label: <Link to="/jobs">Jobs & Match</Link>,
                 },
                 {
+                  key: '/tracker',
+                  icon: <SolutionOutlined />,
+                  label: <Link to="/tracker">Tracker</Link>,
+                },
+                {
                   key: '/profile',
                   icon: <SettingOutlined />,
                   label: <Link to="/profile">Profile & Settings</Link>,
@@ -181,7 +123,7 @@ function AppShell() {
             path="/"
             element={
               <ProtectedRoute>
-                <HomeStatusView />
+                <DashboardPage />
               </ProtectedRoute>
             }
           />
@@ -198,6 +140,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tracker"
+            element={
+              <ProtectedRoute>
+                <TrackerPage />
               </ProtectedRoute>
             }
           />
