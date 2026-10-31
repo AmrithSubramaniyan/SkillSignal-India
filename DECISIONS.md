@@ -64,3 +64,10 @@
    - Duplicate `(user_id, job_id)` returns HTTP 409 Conflict, and every status transition records an `ApplicationEvent`.
 2. **Demo Data Seeder (`APP_SEED_DEMO=true`)**:
    - `DemoDataSeeder` creates `demo@skillsignal.test` (`DemoPass123!`), 1 verified resume, 4 jobs spanning high (~100%), good (~85%), partial (~55%), and low (~14%) match levels, and 3 tracked applications including due follow-ups.
+
+## Stage 8: Sprint 1 Close, Security Hardening, OpenAPI & CI
+1. **OpenAPI 3 & Swagger UI**:
+   - Exposed at `/swagger-ui.html` and `/v3/api-docs` with Bearer JWT authentication configured in `OpenApiConfig`.
+2. **Security Headers & CI Pipeline**:
+   - Enforces `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`.
+   - Added `.github/workflows/ci.yml` running backend Maven tests on JDK 17 and frontend TypeScript/Vite build on Node 20.

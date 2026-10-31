@@ -1,6 +1,6 @@
 # SkillSignal India — Progress Tracker
 
-## Sprint 1: Foundation + POC Core
+## Sprint 1: Foundation + POC Core (`sprint1-v1`)
 
 - [x] **STAGE 0: ENVIRONMENT** — Detect OS & tools, install JDK 17 (user-space Eclipse Temurin 17), configure H2 (PostgreSQL mode) fallback since Docker/PostgreSQL 16 are unavailable locally, initialize Git, create `.gitignore`, `docs/MASTER_PROMPT.md`, `PROGRESS.md`, `DECISIONS.md`.
 - [x] **STAGE 1: SKELETON** — `backend/`, `frontend/`, `apply-agent/`, `docker-compose.yml`, `.env.example`, `README.md`, `scripts/`, `GET /api/health` + React home page status display.
@@ -10,10 +10,12 @@
 - [x] **STAGE 5: RESUME (B1-B3)** — PDF/DOCX upload up to 5 MB with extension + magic byte validation, `./uploads/{userId}/{uuid}`, PDFBox/POI text extraction, AI parser, verified skills editor, max 3 versions & default flag, security/isolation tests.
 - [x] **STAGE 6: AI ADAPTER + JOBS + MATCH (C1, C2, D1)** — `AiClient` (`mock`, `anthropic`, `openai`) with 30s timeout, retry, 15k char limit, SHA-256 cache, 502 error handling; job creation & parsing; deterministic Java match scoring (60/10/20/10) + skill normalization + conditional suggestions + disclaimer; frontend screens & unit tests.
 - [x] **STAGE 7: TRACKER BASIC + DASHBOARD BASIC (E1, E7 basic)** — Application tracker CRUD, status history events, 409 on duplicate, dashboard summary counts & due follow-ups, `APP_SEED_DEMO=true` seeder (`demo@skillsignal.test`).
-- [ ] **STAGE 8: SPRINT 1 CLOSE** — UI polish, security review & headers, OpenAPI (`/swagger-ui.html`), comprehensive `README.md`, GitHub Actions CI workflow, full test suite + frontend production build, tag `sprint1-v1`.
+- [x] **STAGE 8: SPRINT 1 CLOSE** — UI polish, security review & headers, OpenAPI (`/swagger-ui.html`), comprehensive `README.md`, GitHub Actions CI workflow (`.github/workflows/ci.yml`), full test suite + frontend production build, tag `sprint1-v1`.
 
 ## Current Status
-- **Current Stage**: Stage 7 completed, moving to Stage 8
-- **Last Commit**: `e942171` (Stage 6); committing Stage 7 next
-- **Next Step**: Stage 8 — Sprint 1 Close (OpenAPI `/swagger-ui.html` verification, security headers & review, CI workflow `.github/workflows/ci.yml`, full `README.md`, tag `sprint1-v1`)
-- **Open GATES**: None blocking Sprint 1
+- **Current Stage**: Sprint 1 (Stages 0–8) COMPLETED (`sprint1-v1`)
+- **Last Commit**: `3cc4184` (Stage 7); committing Stage 8 and tagging `sprint1-v1`
+- **Next Step**: Sprint 1 POC Demo ready. For future sprints (real job connectors, email OAuth, browser apply agent), stop at GATES G2–G7 as defined in `docs/MASTER_PROMPT.md`.
+- **Open GATES**:
+  - **G2**: Optional real AI provider key (`AI_PROVIDER=anthropic|openai`, `AI_API_KEY`); currently running in offline `mock` mode by default.
+  - **G3–G7**: Reserved for future sprints (external job source connectors, OAuth email sending, Playwright portal adapters, public deployment legal review).
