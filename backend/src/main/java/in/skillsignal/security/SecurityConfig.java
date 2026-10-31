@@ -61,6 +61,10 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
+                                "/mock-portal/**",
+                                "/api/agents/tasks/next",
+                                "/api/agents/tasks/*/report",
+                                "/api/agents/tasks/*/blocker",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"

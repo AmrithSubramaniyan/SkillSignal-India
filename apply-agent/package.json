@@ -1,0 +1,17 @@
+{
+  "name": "skillsignal-apply-agent",
+  "version": "1.0.0-lite",
+  "description": "SkillSignal India Local Browser Apply-Agent (Node + TypeScript + Playwright, headed Chromium, persistent user profile, revocable device token)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/mockPortalAgent.test.mjs",
+    "start": "node src/cli.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

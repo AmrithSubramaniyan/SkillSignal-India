@@ -221,3 +221,13 @@
    - Uses pessimistic row-level locks (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) on `SourceCircuitBreaker` and `AutoApplyPreference` to serialize failure counts and rate-limit window checks (`checkAndAcquireSourcePermit`).
    - Automatically opens the per-source circuit breaker and pauses auto-apply (`globalState = "PAUSED"`) after 3 consecutive failures or immediately upon `CAPTCHA`, `UNUSUAL_ACTIVITY`, `REJECTION_SPIKE`, or `TERMS_CHANGE`.
 
+## Stage 27 & Stage 28: Mode 3 Enablement (`F11`) & Playwright Apply-Agent Lite (`F14`)
+1. **Mode 3 Guided Enablement & Instant Consent Revocation (`AgentAndPortalService`)**:
+   - Enabling `AUTO_SUBMIT` (Mode 3) requires: (1) source capability permits it (`mock_portal` or `email_apply`; portals like LinkedIn/Naukri are blocked with HTTP 422), (2) a completed dry run (`AutoApplyRunRepository.existsByUserIdAndDryRunTrue`), (3) exact typed confirmation (`"I UNDERSTAND THE ACCOUNT BAN AND LEGAL RISKS"`), and (4) versioned logged `ConsentRecord`.
+   - Automatically lowers caps to `<= 3/day` and `<= 10/week`. Revoking consent (`consentEnabled = false`) cancels all `QUEUED` and `IN_PROGRESS` tasks for that portal immediately.
+2. **Playwright Apply-Agent & Local Mock Portal (`apply-agent/` & `MockPortalController`)**:
+   - `apply-agent` implements the `PortalAdapter` contract (`isLoggedIn`, `openJob`, `detectApplyType`, `readQuestions`, `fillAnswers`, `uploadResume`, `submit`, `detectConfirmation`, `detectBlocker`) and `AgentRunner`.
+   - Never stores or transmits portal passwords, cookies, or session tokens (any payload containing `password`, `cookie`, or `sessionToken` is rejected with HTTP 400).
+   - `FILL_ONLY` mode fills answers and uploads the resume, then stops before final Submit (`submitClicks == 0`). Missing confirmation signals route strictly to `NEEDS_VERIFICATION` without auto-retrying.
+
+
