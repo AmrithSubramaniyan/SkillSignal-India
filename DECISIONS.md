@@ -215,7 +215,9 @@
    - Sending an email application (`POST /api/email-apply/messages/{id}/send`) requires `approvedByUser = true` (`HTTP 422` otherwise).
    - Once sent, the message status is `"SENT"` and the tracker `Application` is placed in `NEEDS_VERIFICATION` (`confirmationType = "UNCONFIRMED"`) until an acknowledgement is detected in the user's mailbox (when `ackDetectionEnabled = true`) to upgrade to `EXTERNALLY_CONFIRMED`.
 
-
-
-
+## Stage 26: Safety Governor Full (`F16`)
+1. **Emergency Kill Switch, Circuit Breakers & Auto-Pause (`SafetyGovernorService`)**:
+   - Both User (`POST /api/safety/kill-switch`) and Admin (`POST /api/safety/admin/kill-switch`) kill switches immediately set `globalState = "STOPPED"`, cancel all `QUEUED` and `IN_PROGRESS` `ApplyTask` items within seconds, open circuit breakers, and write a `CRITICAL` `SafetyEvent`.
+   - Uses pessimistic row-level locks (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) on `SourceCircuitBreaker` and `AutoApplyPreference` to serialize failure counts and rate-limit window checks (`checkAndAcquireSourcePermit`).
+   - Automatically opens the per-source circuit breaker and pauses auto-apply (`globalState = "PAUSED"`) after 3 consecutive failures or immediately upon `CAPTCHA`, `UNUSUAL_ACTIVITY`, `REJECTION_SPIKE`, or `TERMS_CHANGE`.
 
