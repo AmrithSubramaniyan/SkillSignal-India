@@ -175,3 +175,12 @@
 2. **The 9 Eligibility Checks & `"Why Applied / Why Skipped"`**:
    - Evaluates (1) listing accessible/open, (2) criteria + Strict Match Rule, (3) no duplicate within cooldown, (4) approved resume exists, (5) all questions supported/answerable, (6) not on exclusion lists, (7) provider capability permits method, (8) daily/weekly caps, global pause/stop & source enabled, and (9) readiness threshold & truthfulness check. Any failure routes to the Review Queue and never auto-submits.
    - Verified across 44 fixtures spanning 8 industries and 4 experience bands (`0, 2, 5, 12` years), confirming that `2` matched skills fails and `3` matched skills passes when `MIN_SKILLS = 3`.
+
+## Stage 21: Submission State Machine, Idempotency & Immutable Audit (`F15`)
+1. **14-State Submission Workflow (`SubmissionStateMachine`)**:
+   - Enforces legal transitions across `DISCOVERED`, `MATCHED`, `PACK_PREPARING`, `PACK_READY`, `AWAITING_APPROVAL`, `APPROVED`, `EDITED`, `REJECTED`, `EXPIRED`, `SUBMITTING`, `SUBMITTED_CONFIRMED`, `FAILED`, `NEEDS_VERIFICATION`, and `BLOCKED_MANUAL_ACTION`, rejecting illegal transitions with HTTP 422.
+   - Enforces the `NEEDS_VERIFICATION` Golden Rule: any retry or transition from `NEEDS_VERIFICATION` to `SUBMITTING` or `APPROVED` is rejected with HTTP 422; only explicit user resolution via `POST /api/submissions/{id}/resolve` (`SUBMITTED_CONFIRMED` or `FAILED`) can move it out of `NEEDS_VERIFICATION`.
+2. **Idempotency & Immutable Attempt Audit (`idempotency_keys` & `application_submission_attempts`)**:
+   - Every preparation request is keyed by `(user_id, idempotency_key)` so duplicate calls return the existing submission without duplicating state transitions.
+   - Every state transition writes an immutable `ApplicationSubmissionAttempt` row capturing `from_state`, `to_state`, `rule_decision_json`, `resume_hash`, `answers_used_json`, `pack_snapshot_json`, `provider_response`, `actor`, and `created_at`.
+
