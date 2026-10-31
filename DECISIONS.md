@@ -30,3 +30,12 @@
    - `LoginRateLimiter` tracks login attempts per IP+email window (`AUTH_RATE_LIMIT_MAX_ATTEMPTS`, `AUTH_RATE_LIMIT_WINDOW_SECONDS`) and rejects brute-force bursts with HTTP 429.
 3. **Mail Abstraction (`MailSenderService`)**:
    - `ConsoleMailSenderService` implements `MailSenderService` for local/dev without logging raw reset tokens in plain text.
+
+## Stage 4: Profile, Consent & Privacy Controls
+1. **Global & India-Ready Career Profile**:
+   - Supports LPA / Annual / Monthly salary periods, INR/USD/EUR/GBP currencies, optional notice period in days, Indian and global cities, and cross-industry skill tags.
+2. **Versioned, Revocable Consents & Audit Trail**:
+   - Every consent grant/revocation (`STORE_RESUME_ANSWERS`, `ENABLE_PORTAL_APPLY`, `ENABLE_EMAIL_SENDING`) records `consent_version`, `granted_at` / `revoked_at`, and writes an immutable `AuditLog` entry.
+3. **Complete Data Export & Erasure**:
+   - `GET /api/privacy/export` exports all user-owned entities as a single JSON document.
+   - `DELETE /api/privacy/account` recursively removes `./uploads/{userId}` on disk (verified to stay inside `uploadRootDir`) and deletes all user database records.

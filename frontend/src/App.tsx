@@ -7,10 +7,14 @@ import {
   LogoutOutlined,
   DashboardOutlined,
   UserOutlined,
+  SettingOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { apiClient } from './api/client'
 import LoginPage from './pages/LoginPage'
+import ProfilePage from './pages/ProfilePage'
+import PrivacyPage from './pages/PrivacyPage'
 
 const { Header, Content } = Layout
 const { Title, Paragraph, Text } = Typography
@@ -107,8 +111,8 @@ function AppShell() {
           padding: '0 24px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link to="/" style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1 }}>
+          <Link to="/" style={{ color: '#fff', fontWeight: 700, fontSize: 18, whiteSpace: 'nowrap' }}>
             SkillSignal India
           </Link>
           {user && (
@@ -116,11 +120,22 @@ function AppShell() {
               theme="dark"
               mode="horizontal"
               selectedKeys={[location.pathname]}
+              style={{ flex: 1, minWidth: 0 }}
               items={[
                 {
                   key: '/',
                   icon: <DashboardOutlined />,
                   label: <Link to="/">Dashboard</Link>,
+                },
+                {
+                  key: '/profile',
+                  icon: <SettingOutlined />,
+                  label: <Link to="/profile">Profile & Settings</Link>,
+                },
+                {
+                  key: '/privacy',
+                  icon: <SafetyCertificateOutlined />,
+                  label: <Link to="/privacy">Privacy & Consents</Link>,
                 },
               ]}
             />
@@ -130,7 +145,7 @@ function AppShell() {
           {user ? (
             <Space>
               <Tag icon={<UserOutlined />} color="blue">
-                {user.email} ({user.role})
+                {user.email}
               </Tag>
               <Button size="small" icon={<LogoutOutlined />} onClick={() => logout()}>
                 Sign Out
@@ -153,6 +168,22 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <HomeStatusView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <ProtectedRoute>
+                <PrivacyPage />
               </ProtectedRoute>
             }
           />
