@@ -43,14 +43,15 @@ public class GreenhousePublicBoardConnector {
 
     public List<PublicBoardJob> fetchBoardJobs(String boardToken, Duration timeout) throws Exception {
         String token = (boardToken == null || boardToken.isBlank()) ? "demo-india" : boardToken.trim();
-        if ("simulate-timeout".equalsIgnoreCase(token)) {
+        if ("simulate-timeout".equalsIgnoreCase(token) || "timeout-board".equalsIgnoreCase(token)) {
             Thread.sleep(Math.max(500, timeout.toMillis() + 300));
             throw new java.util.concurrent.TimeoutException("Simulated source timeout for boardToken=" + token);
         }
-        if ("simulate-error".equalsIgnoreCase(token)) {
+        if ("simulate-error".equalsIgnoreCase(token) || "error-board".equalsIgnoreCase(token)) {
             throw new IllegalStateException("Simulated upstream error from public job board API");
         }
-        if ("demo-india".equalsIgnoreCase(token) || "offline-fixture".equalsIgnoreCase(token)) {
+        if ("demo-india".equalsIgnoreCase(token) || "offline-fixture".equalsIgnoreCase(token)
+                || token.toLowerCase().startsWith("fixture-")) {
             return getCuratedPublicBoardFixtures();
         }
 

@@ -10,12 +10,16 @@ import {
   FileTextOutlined,
   AimOutlined,
   SolutionOutlined,
+  SearchOutlined,
+  ApiOutlined,
 } from '@ant-design/icons'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ResumesPage from './pages/ResumesPage'
 import JobsPage from './pages/JobsPage'
+import JobSearchPage from './pages/JobSearchPage'
+import SourcesPage from './pages/SourcesPage'
 import TrackerPage from './pages/TrackerPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
@@ -74,9 +78,19 @@ function AppShell() {
                   label: <Link to="/resumes">Resumes</Link>,
                 },
                 {
+                  key: '/search',
+                  icon: <SearchOutlined />,
+                  label: <Link to="/search">AI Job Search</Link>,
+                },
+                {
                   key: '/jobs',
                   icon: <AimOutlined />,
                   label: <Link to="/jobs">Jobs & Match</Link>,
+                },
+                {
+                  key: '/sources',
+                  icon: <ApiOutlined />,
+                  label: <Link to="/sources">Sources</Link>,
                 },
                 {
                   key: '/tracker',
@@ -136,10 +150,26 @@ function AppShell() {
             }
           />
           <Route
+            path="/search"
+            element={
+              <ProtectedRoute>
+                <JobSearchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/jobs"
             element={
               <ProtectedRoute>
                 <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sources"
+            element={
+              <ProtectedRoute>
+                <SourcesPage />
               </ProtectedRoute>
             }
           />

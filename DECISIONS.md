@@ -80,3 +80,12 @@
 2. **GATE G3 & Greenhouse Public Job Board API Connector (`GreenhousePublicBoardConnector`)**:
    - Reviewed Greenhouse Developer Docs (`GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true`) and confirmed read-only job retrieval requires no authentication or scraping.
    - Built `GreenhousePublicBoardConnector` with a 5-second HTTP timeout, offline fixture support (`fixture-india-tech`, `fixture-healthcare`, `fixture-finance`) for deterministic tests/offline development, and a slow/failing simulation board (`timeout-board`, `error-board`) for testing orchestrator resilience.
+
+## Stage 10: Natural-Language Query Parser & Parallel Search Orchestrator
+1. **Rule-Based First + AI Assist Query Parser (`NaturalLanguageQueryParser`)**:
+   - Deterministic rule-based extraction handles Indian/global cities and aliases (Bangalore->Bengaluru, Gurgaon->Gurugram, Bombay->Mumbai, Trivandrum->Thiruvananthapuram), experience ranges (`fresher`, `3+ years`, `4 to 7 years`), LPA salaries (`above 18 LPA`, `12+ lakhs`, `with disclosed salary`), work modes (`REMOTE`/`HYBRID`/`ONSITE`), posted date windows (`today`, `last 7 days`, `this month`), employment types, companies (`at Zerodha`), sources, saved/applied flags, and 305+ cross-industry skills.
+   - Falls back to `AiClient` when rule-based extraction yields no skills or structured filters.
+   - Verified across 22 cross-industry test queries in `Stage10SearchAndOrchestratorTest`.
+2. **Parallel Multi-Source Search Orchestrator (`JobSearchOrchestrator`)**:
+   - Executes enabled sources in parallel via `CompletableFuture.supplyAsync(...).orTimeout(timeoutMs, MILLISECONDS)`.
+   - Never fails the overall search when an individual source times out, throws an error, or is disabled in `source_capabilities`; instead records per-source timing and status in `sourcesSearched` and `sourcesFailed` alongside `coverageDisclaimer`.
