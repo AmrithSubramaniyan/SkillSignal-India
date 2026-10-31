@@ -8,16 +8,16 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-skillsignal}
       POSTGRES_USER: ${POSTGRES_USER:-skillsignal}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skillpass_staging_secret_123}
     volumes:
       - skillsignal_staging_pgdata:/var/lib/postgresql/data
     networks:
       - skillsignal_internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-skillsignal} -d $${POSTGRES_DB:-skillsignal}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skillsignal} -d ${POSTGRES_DB:-skillsignal}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   kafka:
     image: apache/kafka:3.8.0
@@ -40,7 +40,6 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M"
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
-    # Internal network only — never exposed to host
     volumes:
       - skillsignal_staging_kafkadata:/var/lib/kafka/data
     networks:
@@ -60,12 +59,17 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-skillsignal}
+      DB_DRIVER: org.postgresql.Driver
+      DB_USERNAME: ${POSTGRES_USER:-skillsignal}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-skillpass_staging_secret_123}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-skillsignal}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-skillsignal}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-skillpass_staging_secret_123}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
-      APP_JWT_SECRET: ${APP_JWT_SECRET:?APP_JWT_SECRET must be set in .env}
-      APP_MAILBOX_ENCRYPTION_KEY: ${APP_MAILBOX_ENCRYPTION_KEY:?APP_MAILBOX_ENCRYPTION_KEY must be set in .env}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-change-me-in-production-at-least-32-bytes-long-secret-key-2026}
+      APP_MAILBOX_ENCRYPTION_KEY: ${APP_MAILBOX_ENCRYPTION_KEY:-skillsignal-mailbox-aes256-key-32b!!}
       APP_AI_PROVIDER: ${APP_AI_PROVIDER:-mock}
       APP_SEED_DEMO: "false"
     ports:
@@ -74,9 +78,10 @@ services:
       - skillsignal_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 40s
 
   frontend:
     build:
