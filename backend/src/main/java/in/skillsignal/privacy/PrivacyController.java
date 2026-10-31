@@ -5,6 +5,7 @@ import in.skillsignal.application.ApplicationRepository;
 import in.skillsignal.audit.AuditLog;
 import in.skillsignal.audit.AuditLogRepository;
 import in.skillsignal.audit.AuditService;
+import in.skillsignal.company.CompanyRepository;
 import in.skillsignal.consent.ConsentRecordRepository;
 import in.skillsignal.job.JobRepository;
 import in.skillsignal.match.JobMatchRepository;
@@ -60,6 +61,7 @@ public class PrivacyController {
     private final NotificationRepository notificationRepository;
     private final NotificationSentLogRepository notificationSentLogRepository;
     private final UserNotificationPreferenceRepository preferenceRepository;
+    private final CompanyRepository companyRepository;
     private final AuditService auditService;
     private final Path uploadRootDir;
 
@@ -80,6 +82,7 @@ public class PrivacyController {
             NotificationRepository notificationRepository,
             NotificationSentLogRepository notificationSentLogRepository,
             UserNotificationPreferenceRepository preferenceRepository,
+            CompanyRepository companyRepository,
             AuditService auditService,
             @Value("${app.uploads.dir:./uploads}") String uploadDir
     ) {
@@ -99,6 +102,7 @@ public class PrivacyController {
         this.notificationRepository = notificationRepository;
         this.notificationSentLogRepository = notificationSentLogRepository;
         this.preferenceRepository = preferenceRepository;
+        this.companyRepository = companyRepository;
         this.auditService = auditService;
         this.uploadRootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
@@ -137,6 +141,7 @@ public class PrivacyController {
         export.put("reminders", reminderRepository.findByUserIdOrderByDueAtAsc(user.getId()));
         export.put("notifications", notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("notificationPreferences", preferenceRepository.findById(user.getId()).orElse(null));
+        export.put("companies", companyRepository.findByUserIdOrderByPriorityDescNameAsc(user.getId()));
         export.put("auditLogs", auditLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         return export;
     }
@@ -165,6 +170,7 @@ public class PrivacyController {
         }
 
         // 2. Delete all user records
+        companyRepository.deleteByUserId(user.getId());
         notificationSentLogRepository.deleteByUserId(user.getId());
         notificationRepository.deleteByUserId(user.getId());
         reminderRepository.deleteByUserId(user.getId());

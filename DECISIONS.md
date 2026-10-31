@@ -138,3 +138,10 @@
 3. **Never Treat Silence as Rejection & Manual Follow-Up Drafts**:
    - Overdue `FOLLOW_UP` reminders stay actionable until completed, snoozed, or rescheduled and never alter `Application.status` to `REJECTED`.
    - `POST /api/reminders/follow-up-draft` generates a polite follow-up email draft for the candidate to review and send manually.
+
+## Stage 16: Target Companies & Stored-Job Hiring Intelligence (`E5, E6`)
+1. **T1/T2/T3 Tiers & Priority List (`companies` table)**:
+   - Candidates classify companies into `T1`, `T2`, or `T3` and toggle `is_priority` to maintain a focused target list, automatically synced with companies present in their stored jobs.
+2. **Evidence Strictly from Stored Jobs & Mandatory Disclaimer**:
+   - `CompanyIntelligenceService` computes 30/60/90-day job counts, distinct roles, distinct locations, and disclosed salary ranges (`"not enough data"` when undisclosed) strictly from the user's own stored `Job` records.
+   - Every response and UI banner prominently displays `"Listings are not hires — computed strictly from your own stored job listings."`
