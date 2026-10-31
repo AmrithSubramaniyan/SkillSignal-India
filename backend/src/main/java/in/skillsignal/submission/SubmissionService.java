@@ -16,6 +16,7 @@ import in.skillsignal.reminder.Reminder;
 import in.skillsignal.reminder.ReminderAndNotificationService;
 import in.skillsignal.reminder.ReminderRepository;
 import in.skillsignal.security.MailSenderService;
+import in.skillsignal.session.SessionCheckoutEmailService;
 import in.skillsignal.user.User;
 import in.skillsignal.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -101,6 +102,7 @@ public class SubmissionService {
     private final UserRepository userRepository;
     private final MailSenderService mailSenderService;
     private final AuditService auditService;
+    private final SessionCheckoutEmailService sessionCheckoutEmailService;
     private final ObjectMapper objectMapper;
 
     public SubmissionService(
@@ -119,6 +121,7 @@ public class SubmissionService {
             UserRepository userRepository,
             MailSenderService mailSenderService,
             AuditService auditService,
+            SessionCheckoutEmailService sessionCheckoutEmailService,
             ObjectMapper objectMapper
     ) {
         this.submissionRepository = submissionRepository;
@@ -136,6 +139,7 @@ public class SubmissionService {
         this.userRepository = userRepository;
         this.mailSenderService = mailSenderService;
         this.auditService = auditService;
+        this.sessionCheckoutEmailService = sessionCheckoutEmailService;
         this.objectMapper = objectMapper;
     }
 
@@ -759,6 +763,18 @@ public class SubmissionService {
         }
         app.setNotes(note);
         app = applicationRepository.saveAndFlush(app);
+
+        sessionCheckoutEmailService.recordQualifyingApplicationApplied(
+                userId,
+                app.getId(),
+                job.getCompany(),
+                job.getTitle(),
+                app.getAppliedAt() != null ? app.getAppliedAt() : Instant.now(),
+                "Applied on company page",
+                app.getConfirmationType(),
+                null,
+                false
+        );
 
         ApplicationEvent ev = new ApplicationEvent();
         ev.setApplicationId(app.getId());

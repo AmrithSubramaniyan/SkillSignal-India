@@ -1,11 +1,14 @@
 package in.skillsignal.consent;
 
 import in.skillsignal.audit.AuditService;
+import in.skillsignal.reminder.UserNotificationPreference;
+import in.skillsignal.reminder.UserNotificationPreferenceRepository;
 import in.skillsignal.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,7 +25,8 @@ public class ConsentController {
     public static final Set<String> SUPPORTED_TYPES = Set.of(
             "STORE_RESUME_ANSWERS",
             "ENABLE_PORTAL_APPLY",
-            "ENABLE_EMAIL_SENDING"
+            "ENABLE_EMAIL_SENDING",
+            "EMAIL_NOTIFICATIONS"
     );
 
     public record ConsentDto(
@@ -51,10 +55,16 @@ public class ConsentController {
     ) {}
 
     private final ConsentRecordRepository consentRepository;
+    private final UserNotificationPreferenceRepository preferenceRepository;
     private final AuditService auditService;
 
-    public ConsentController(ConsentRecordRepository consentRepository, AuditService auditService) {
+    public ConsentController(
+            ConsentRecordRepository consentRepository,
+            UserNotificationPreferenceRepository preferenceRepository,
+            AuditService auditService
+    ) {
         this.consentRepository = consentRepository;
+        this.preferenceRepository = preferenceRepository;
         this.auditService = auditService;
     }
 
@@ -64,7 +74,7 @@ public class ConsentController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         List<ConsentDto> result = new ArrayList<>();
-        for (String type : List.of("STORE_RESUME_ANSWERS", "ENABLE_PORTAL_APPLY", "ENABLE_EMAIL_SENDING")) {
+        for (String type : List.of("STORE_RESUME_ANSWERS", "ENABLE_PORTAL_APPLY", "ENABLE_EMAIL_SENDING", "EMAIL_NOTIFICATIONS")) {
             ConsentRecord rec = consentRepository.findByUserIdAndConsentType(principal.id(), type)
                     .orElseGet(() -> {
                         ConsentRecord created = new ConsentRecord();
@@ -80,6 +90,7 @@ public class ConsentController {
     }
 
     @PutMapping("/{consentType}")
+    @Transactional
     public ConsentDto updateConsent(
             @AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable String consentType,
@@ -113,6 +124,18 @@ public class ConsentController {
         }
         rec = consentRepository.save(rec);
 
+        // Sprint 7 Rule 5: Default session_summary_email_enabled ON once user gives consent for email notifications; otherwise OFF
+        if ("EMAIL_NOTIFICATIONS".equals(normalizedType)) {
+            UserNotificationPreference pref = preferenceRepository.findById(principal.id()).orElseGet(() -> {
+                UserNotificationPreference p = new UserNotificationPreference();
+                p.setUserId(principal.id());
+                return p;
+            });
+            pref.setSessionSummaryEmailEnabled(Boolean.TRUE.equals(req.granted()));
+            pref.setUpdatedAt(Instant.now());
+            preferenceRepository.save(pref);
+        }
+
         auditService.log(
                 principal.id(),
                 req.granted() ? "CONSENT_GRANTED" : "CONSENT_REVOKED",
@@ -124,4 +147,3 @@ public class ConsentController {
         return ConsentDto.from(rec);
     }
 }
-

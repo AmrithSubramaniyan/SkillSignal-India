@@ -9,6 +9,7 @@ import in.skillsignal.reminder.Reminder;
 import in.skillsignal.reminder.ReminderAndNotificationService;
 import in.skillsignal.reminder.ReminderRepository;
 import in.skillsignal.security.AuthenticatedUser;
+import in.skillsignal.session.SessionCheckoutEmailService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
@@ -124,6 +125,7 @@ public class ApplicationController {
     private final ReminderRepository reminderRepository;
     private final ReminderAndNotificationService reminderService;
     private final AuditService auditService;
+    private final SessionCheckoutEmailService sessionCheckoutEmailService;
 
     public ApplicationController(
             ApplicationRepository applicationRepository,
@@ -133,7 +135,8 @@ public class ApplicationController {
             JobMatchRepository jobMatchRepository,
             ReminderRepository reminderRepository,
             ReminderAndNotificationService reminderService,
-            AuditService auditService
+            AuditService auditService,
+            SessionCheckoutEmailService sessionCheckoutEmailService
     ) {
         this.applicationRepository = applicationRepository;
         this.eventRepository = eventRepository;
@@ -143,6 +146,7 @@ public class ApplicationController {
         this.reminderRepository = reminderRepository;
         this.reminderService = reminderService;
         this.auditService = auditService;
+        this.sessionCheckoutEmailService = sessionCheckoutEmailService;
     }
 
     @PostMapping("/applications")
@@ -202,6 +206,21 @@ public class ApplicationController {
             app.setAppliedAt(Instant.now());
         }
         app = applicationRepository.save(app);
+
+        if (("APPLIED".equals(outcome.effectiveStatus()) || "APPLIED_CONFIRMED".equals(outcome.effectiveStatus()))
+                && outcome.effectiveSubState() == null) {
+            sessionCheckoutEmailService.recordQualifyingApplicationApplied(
+                    principal.id(),
+                    app.getId(),
+                    job.getCompany(),
+                    job.getTitle(),
+                    app.getAppliedAt(),
+                    "Applied on company page",
+                    outcome.effectiveConfirmationType(),
+                    null,
+                    false
+            );
+        }
 
         ApplicationEvent ev = new ApplicationEvent();
         ev.setApplicationId(app.getId());
@@ -324,6 +343,17 @@ public class ApplicationController {
                 && outcome.effectiveSubState() == null
                 && job != null) {
             ensureFollowUpReminderAndDraft(principal.id(), app, job);
+            sessionCheckoutEmailService.recordQualifyingApplicationApplied(
+                    principal.id(),
+                    app.getId(),
+                    job.getCompany(),
+                    job.getTitle(),
+                    app.getAppliedAt() != null ? app.getAppliedAt() : Instant.now(),
+                    "Applied on company page",
+                    outcome.effectiveConfirmationType(),
+                    null,
+                    false
+            );
         }
         return toDto(app, job);
     }

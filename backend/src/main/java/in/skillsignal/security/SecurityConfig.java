@@ -61,6 +61,8 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
+                                "/api/sessions/*/checkout-beacon",
+                                "/api/sessions/summary-email/unsubscribe",
                                 "/mock-portal/**",
                                 "/api/agents/tasks/next",
                                 "/api/agents/tasks/*/report",

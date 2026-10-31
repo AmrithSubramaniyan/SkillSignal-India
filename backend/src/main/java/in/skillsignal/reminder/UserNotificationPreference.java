@@ -1,5 +1,6 @@
 package in.skillsignal.reminder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -28,6 +29,16 @@ public class UserNotificationPreference {
     @Column(name = "daily_summary_enabled", nullable = false)
     private boolean dailySummaryEnabled = true;
 
+    @Column(name = "session_summary_email_enabled", nullable = false)
+    private boolean sessionSummaryEmailEnabled = false;
+
+    @Column(name = "include_while_away_applications", nullable = false)
+    private boolean includeWhileAwayApplications = true;
+
+    @JsonIgnore
+    @Column(name = "unsubscribe_token_hash", length = 128)
+    private String unsubscribeTokenHash;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
@@ -46,7 +57,21 @@ public class UserNotificationPreference {
     public boolean isDailySummaryEnabled() { return dailySummaryEnabled; }
     public void setDailySummaryEnabled(boolean dailySummaryEnabled) { this.dailySummaryEnabled = dailySummaryEnabled; }
 
+    public boolean isSessionSummaryEmailEnabled() { return sessionSummaryEmailEnabled; }
+    public void setSessionSummaryEmailEnabled(boolean sessionSummaryEmailEnabled) {
+        this.sessionSummaryEmailEnabled = sessionSummaryEmailEnabled;
+    }
+
+    public boolean isIncludeWhileAwayApplications() { return includeWhileAwayApplications; }
+    public void setIncludeWhileAwayApplications(boolean includeWhileAwayApplications) {
+        this.includeWhileAwayApplications = includeWhileAwayApplications;
+    }
+
+    public String getUnsubscribeTokenHash() { return unsubscribeTokenHash; }
+    public void setUnsubscribeTokenHash(String unsubscribeTokenHash) {
+        this.unsubscribeTokenHash = unsubscribeTokenHash;
+    }
+
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
-

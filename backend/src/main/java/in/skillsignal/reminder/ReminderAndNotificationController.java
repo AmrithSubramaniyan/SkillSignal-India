@@ -39,7 +39,9 @@ public class ReminderAndNotificationController {
             String timeZone,
             String quietHoursStart,
             String quietHoursEnd,
-            Boolean dailySummaryEnabled
+            Boolean dailySummaryEnabled,
+            Boolean sessionSummaryEmailEnabled,
+            Boolean includeWhileAwayApplications
     ) {}
 
     public record DispatchRequest(
@@ -178,7 +180,9 @@ public class ReminderAndNotificationController {
                 req.timeZone(),
                 req.quietHoursStart(),
                 req.quietHoursEnd(),
-                req.dailySummaryEnabled()
+                req.dailySummaryEnabled(),
+                req.sessionSummaryEmailEnabled(),
+                req.includeWhileAwayApplications()
         );
     }
 

@@ -96,6 +96,19 @@ public class ReminderAndNotificationService {
             String quietHoursEnd,
             Boolean dailySummaryEnabled
     ) {
+        return updatePreferences(userId, timeZone, quietHoursStart, quietHoursEnd, dailySummaryEnabled, null, null);
+    }
+
+    @Transactional
+    public UserNotificationPreference updatePreferences(
+            UUID userId,
+            String timeZone,
+            String quietHoursStart,
+            String quietHoursEnd,
+            Boolean dailySummaryEnabled,
+            Boolean sessionSummaryEmailEnabled,
+            Boolean includeWhileAwayApplications
+    ) {
         UserNotificationPreference pref = getOrCreatePreferences(userId);
         if (timeZone != null && !timeZone.isBlank()) {
             try {
@@ -115,6 +128,12 @@ public class ReminderAndNotificationService {
         }
         if (dailySummaryEnabled != null) {
             pref.setDailySummaryEnabled(dailySummaryEnabled);
+        }
+        if (sessionSummaryEmailEnabled != null) {
+            pref.setSessionSummaryEmailEnabled(sessionSummaryEmailEnabled);
+        }
+        if (includeWhileAwayApplications != null) {
+            pref.setIncludeWhileAwayApplications(includeWhileAwayApplications);
         }
         pref.setUpdatedAt(Instant.now());
         return preferenceRepository.save(pref);

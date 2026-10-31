@@ -9,6 +9,7 @@ import in.skillsignal.job.Job;
 import in.skillsignal.job.JobRepository;
 import in.skillsignal.resume.ResumeVersion;
 import in.skillsignal.resume.ResumeVersionRepository;
+import in.skillsignal.session.SessionCheckoutEmailService;
 import in.skillsignal.user.User;
 import in.skillsignal.user.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,6 +75,7 @@ public class EmailApplyService {
     private final ApplicationEventRepository applicationEventRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final SessionCheckoutEmailService sessionCheckoutEmailService;
     private final byte[] aesKeyBytes;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -86,6 +88,7 @@ public class EmailApplyService {
             ApplicationEventRepository applicationEventRepository,
             UserRepository userRepository,
             AuditService auditService,
+            SessionCheckoutEmailService sessionCheckoutEmailService,
             @Value("${app.mailbox.encryption-key:skillsignal-local-dev-mailbox-key-32b}") String rawEncryptionKey
     ) {
         this.mailboxRepository = mailboxRepository;
@@ -96,6 +99,7 @@ public class EmailApplyService {
         this.applicationEventRepository = applicationEventRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.sessionCheckoutEmailService = sessionCheckoutEmailService;
         this.aesKeyBytes = deriveAes256Key(rawEncryptionKey);
     }
 
@@ -319,6 +323,19 @@ public class EmailApplyService {
         msg.setApplicationId(app.getId());
         msg = messageRepository.save(msg);
 
+        // Sprint 7 Rule 6: SENT (email-apply, unconfirmed) qualifies with truthful UNCONFIRMED label
+        sessionCheckoutEmailService.recordQualifyingApplicationApplied(
+                userId,
+                app.getId(),
+                job.getCompany(),
+                job.getTitle(),
+                Instant.now(),
+                "Sent by email",
+                "UNCONFIRMED",
+                null,
+                false
+        );
+
         auditService.log(userId, "EMAIL_APPLY_SENT", "EmailApplyMessage", msg.getId().toString(),
                 Map.of("providerMessageId", providerMessageId, "status", "SENT"));
 
@@ -371,6 +388,18 @@ public class EmailApplyService {
                 app.setNotes("Upgraded to EXTERNALLY_CONFIRMED via mailbox acknowledgement: "
                         + (ackHeaderOrSubject != null ? ackHeaderOrSubject : "Auto-reply receipt"));
                 applicationRepository.save(app);
+
+                sessionCheckoutEmailService.recordQualifyingApplicationApplied(
+                        userId,
+                        app.getId(),
+                        job != null ? job.getCompany() : "Unknown Company",
+                        job != null ? job.getTitle() : "Open Role",
+                        app.getAppliedAt(),
+                        "Sent by email",
+                        "EXTERNALLY_CONFIRMED",
+                        null,
+                        false
+                );
 
                 ApplicationEvent ev = new ApplicationEvent();
                 ev.setApplicationId(app.getId());

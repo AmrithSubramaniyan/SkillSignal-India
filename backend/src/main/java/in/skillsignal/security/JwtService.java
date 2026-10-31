@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -32,12 +33,30 @@ public class JwtService {
     }
 
     public String generateToken(User user) {
+        return generateToken(user, null);
+    }
+
+    public String generateToken(User user, UUID sessionId) {
         Instant now = Instant.now();
         Instant expiry = now.plus(expirationHours, ChronoUnit.HOURS);
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry));
+        if (sessionId != null) {
+            builder.claim("sessionId", sessionId.toString());
+        }
+        return builder.signWith(secretKey).compact();
+    }
+
+    public String generateUnsubscribeToken(UUID userId) {
+        Instant now = Instant.now();
+        Instant expiry = now.plus(30, ChronoUnit.DAYS);
+        return Jwts.builder()
+                .subject(userId.toString())
+                .claim("purpose", "SESSION_SUMMARY_UNSUBSCRIBE")
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(secretKey)
@@ -52,4 +71,3 @@ public class JwtService {
                 .getPayload();
     }
 }
-

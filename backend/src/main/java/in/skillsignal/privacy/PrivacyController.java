@@ -39,6 +39,10 @@ import in.skillsignal.safety.SourceCircuitBreakerRepository;
 import in.skillsignal.search.SavedSearchRepository;
 import in.skillsignal.security.AuthController;
 import in.skillsignal.security.AuthenticatedUser;
+import in.skillsignal.session.OutboxEventRepository;
+import in.skillsignal.session.SessionAppliedItemRepository;
+import in.skillsignal.session.SessionSummaryEmailRepository;
+import in.skillsignal.session.UserSessionRepository;
 import in.skillsignal.submission.ApplicationSubmissionAttemptRepository;
 import in.skillsignal.submission.ApplicationSubmissionRepository;
 import in.skillsignal.submission.IdempotencyKeyRepository;
@@ -106,6 +110,10 @@ public class PrivacyController {
     private final InterviewPrepSessionRepository interviewPrepSessionRepository;
     private final UserFeedbackRepository userFeedbackRepository;
     private final UsageEventRepository usageEventRepository;
+    private final UserSessionRepository userSessionRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final SessionAppliedItemRepository sessionAppliedItemRepository;
+    private final SessionSummaryEmailRepository sessionSummaryEmailRepository;
     private final AuditService auditService;
     private final Path uploadRootDir;
 
@@ -149,6 +157,10 @@ public class PrivacyController {
             InterviewPrepSessionRepository interviewPrepSessionRepository,
             UserFeedbackRepository userFeedbackRepository,
             UsageEventRepository usageEventRepository,
+            UserSessionRepository userSessionRepository,
+            OutboxEventRepository outboxEventRepository,
+            SessionAppliedItemRepository sessionAppliedItemRepository,
+            SessionSummaryEmailRepository sessionSummaryEmailRepository,
             AuditService auditService,
             @Value("${app.uploads.dir:./uploads}") String uploadDir
     ) {
@@ -191,6 +203,10 @@ public class PrivacyController {
         this.interviewPrepSessionRepository = interviewPrepSessionRepository;
         this.userFeedbackRepository = userFeedbackRepository;
         this.usageEventRepository = usageEventRepository;
+        this.userSessionRepository = userSessionRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.sessionAppliedItemRepository = sessionAppliedItemRepository;
+        this.sessionSummaryEmailRepository = sessionSummaryEmailRepository;
         this.auditService = auditService;
         this.uploadRootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
@@ -246,6 +262,9 @@ public class PrivacyController {
         export.put("interviewPrepSessions", interviewPrepSessionRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("userFeedback", userFeedbackRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("usageEvents", usageEventRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("userSessions", userSessionRepository.findByUserIdOrderByCheckedInAtDesc(user.getId()));
+        export.put("sessionAppliedItems", sessionAppliedItemRepository.findByUserIdOrderByAppliedAtDesc(user.getId()));
+        export.put("sessionSummaryEmails", sessionSummaryEmailRepository.findByUserIdOrderBySentAtDesc(user.getId()));
         export.put("auditLogs", auditLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         return export;
     }
@@ -274,6 +293,10 @@ public class PrivacyController {
         }
 
         // 2. Delete all user records
+        sessionSummaryEmailRepository.deleteByUserId(user.getId());
+        sessionAppliedItemRepository.deleteByUserId(user.getId());
+        outboxEventRepository.deleteByUserId(user.getId());
+        userSessionRepository.deleteByUserId(user.getId());
         usageEventRepository.deleteByUserId(user.getId());
         userFeedbackRepository.deleteByUserId(user.getId());
         interviewPrepSessionRepository.deleteByUserId(user.getId());

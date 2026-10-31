@@ -12,6 +12,7 @@ import {
   Select,
   Space,
   Switch,
+  Table,
   Tag,
   Typography,
   message,
@@ -20,6 +21,8 @@ import {
   BellOutlined,
   CheckOutlined,
   ClockCircleOutlined,
+  HistoryOutlined,
+  ReloadOutlined,
   SendOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
@@ -44,6 +47,21 @@ interface NotificationPreference {
   quietHoursStart: string
   quietHoursEnd: string
   dailySummaryEnabled: boolean
+  sessionSummaryEmailEnabled: boolean
+  includeWhileAwayApplications: boolean
+}
+
+interface SessionSummaryRow {
+  id: string
+  sessionId?: string
+  checkedInAt: string
+  lastSeenAt?: string
+  checkedOutAt: string | null
+  checkoutReason: string | null
+  timeZone?: string
+  companiesAppliedCount: number
+  summaryEmailStatus: string
+  createdAt?: string
 }
 
 const TIME_ZONES = [
@@ -56,6 +74,7 @@ const TIME_ZONES = [
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [sessions, setSessions] = useState<SessionSummaryRow[]>([])
   const [loading, setLoading] = useState(false)
   const [dispatching, setDispatching] = useState(false)
   const [form] = Form.useForm()
@@ -63,16 +82,20 @@ export default function NotificationsPage() {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [notifRes, prefRes] = await Promise.all([
+      const [notifRes, prefRes, sessRes] = await Promise.all([
         apiClient.get<NotificationItem[]>('/notifications'),
         apiClient.get<NotificationPreference>('/notification-preferences'),
+        apiClient.get<SessionSummaryRow[]>('/sessions'),
       ])
       setNotifications(notifRes.data)
+      setSessions(sessRes.data)
       form.setFieldsValue({
         timeZone: prefRes.data.timeZone,
         quietHoursStart: prefRes.data.quietHoursStart,
         quietHoursEnd: prefRes.data.quietHoursEnd,
         dailySummaryEnabled: prefRes.data.dailySummaryEnabled,
+        sessionSummaryEmailEnabled: prefRes.data.sessionSummaryEmailEnabled,
+        includeWhileAwayApplications: prefRes.data.includeWhileAwayApplications,
       })
     } catch {
       message.error('Failed to load notifications and preferences')
@@ -90,6 +113,8 @@ export default function NotificationsPage() {
     quietHoursStart: string
     quietHoursEnd: string
     dailySummaryEnabled: boolean
+    sessionSummaryEmailEnabled: boolean
+    includeWhileAwayApplications: boolean
   }) => {
     try {
       await apiClient.put('/notification-preferences', values)
@@ -97,6 +122,16 @@ export default function NotificationsPage() {
       loadAll()
     } catch (err: any) {
       message.error(err?.response?.data?.error || 'Could not update preferences')
+    }
+  }
+
+  const handleResendSessionSummary = async (sessionId: string) => {
+    try {
+      await apiClient.post(`/sessions/${sessionId}/resend-summary`)
+      message.success('Session summary email re-evaluated / resent')
+      loadAll()
+    } catch (err: any) {
+      message.error(err?.response?.data?.error || 'Failed to resend session summary')
     }
   }
 
@@ -251,6 +286,22 @@ export default function NotificationsPage() {
               >
                 <Switch />
               </Form.Item>
+              <Form.Item
+                name="sessionSummaryEmailEnabled"
+                label="Email me a summary of companies I applied to after each session"
+                valuePropName="checked"
+                extra="Sends ONE email at session check-out if you applied to at least one company. Requires EMAIL_NOTIFICATIONS consent."
+              >
+                <Switch />
+              </Form.Item>
+              <Form.Item
+                name="includeWhileAwayApplications"
+                label="Include applications completed while I was away"
+                valuePropName="checked"
+                extra="Includes background applications completed between your previous check-out and this session's check-out."
+              >
+                <Switch />
+              </Form.Item>
               <Button type="primary" htmlType="submit" block>
                 Save Preferences
               </Button>
@@ -258,6 +309,74 @@ export default function NotificationsPage() {
           </Card>
         </Col>
       </Row>
+
+      <Card
+        style={{ marginTop: 16 }}
+        title={
+          <Space>
+            <HistoryOutlined /> Recent Login Sessions (Check-in / Check-out & Summary Email Status)
+          </Space>
+        }
+        loading={loading}
+      >
+        <Table
+          rowKey={(row) => row.id || row.sessionId || row.checkedInAt}
+          size="small"
+          pagination={{ pageSize: 8 }}
+          dataSource={sessions}
+          columns={[
+            {
+              title: 'Checked In',
+              dataIndex: 'checkedInAt',
+              render: (v: string) => new Date(v).toLocaleString(),
+            },
+            {
+              title: 'Checked Out',
+              dataIndex: 'checkedOutAt',
+              render: (v: string | null) => (v ? new Date(v).toLocaleString() : <Tag color="green">ACTIVE</Tag>),
+            },
+            {
+              title: 'Check-out Reason',
+              dataIndex: 'checkoutReason',
+              render: (v: string | null) => (v ? <Tag>{v}</Tag> : '—'),
+            },
+            {
+              title: 'Companies Applied',
+              dataIndex: 'companiesAppliedCount',
+              render: (v: number) => <Tag color={v > 0 ? 'blue' : 'default'}>{v}</Tag>,
+            },
+            {
+              title: 'Summary Email Status',
+              dataIndex: 'summaryEmailStatus',
+              render: (v: string) => {
+                const color =
+                  v === 'SENT'
+                    ? 'green'
+                    : v === 'FAILED'
+                      ? 'red'
+                      : v.startsWith('SKIPPED')
+                        ? 'default'
+                        : 'processing'
+                return <Tag color={color}>{v}</Tag>
+              },
+            },
+            {
+              title: 'Actions',
+              key: 'actions',
+              render: (_: any, row: SessionSummaryRow) =>
+                row.checkedOutAt && row.summaryEmailStatus !== 'SENT' ? (
+                  <Button
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    onClick={() => handleResendSessionSummary(row.id || row.sessionId || '')}
+                  >
+                    Re-evaluate / Resend
+                  </Button>
+                ) : null,
+            },
+          ]}
+        />
+      </Card>
     </div>
   )
 }

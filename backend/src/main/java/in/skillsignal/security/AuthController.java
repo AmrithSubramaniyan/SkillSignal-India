@@ -1,6 +1,8 @@
 package in.skillsignal.security;
 
 import in.skillsignal.audit.AuditService;
+import in.skillsignal.session.SessionCheckoutEmailService;
+import in.skillsignal.session.SessionContextHolder;
 import in.skillsignal.user.User;
 import in.skillsignal.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,7 +53,7 @@ public class AuthController {
         }
     }
 
-    public record AuthResponse(String token, UserDto user) {}
+    public record AuthResponse(String token, UserDto user, UUID sessionId, String beaconToken) {}
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -59,6 +61,7 @@ public class AuthController {
     private final LoginRateLimiter loginRateLimiter;
     private final MailSenderService mailSenderService;
     private final AuditService auditService;
+    private final SessionCheckoutEmailService sessionService;
     private final String frontendUrl;
 
     public AuthController(
@@ -68,6 +71,7 @@ public class AuthController {
             LoginRateLimiter loginRateLimiter,
             MailSenderService mailSenderService,
             AuditService auditService,
+            SessionCheckoutEmailService sessionService,
             @Value("${app.frontend-url:http://localhost:5173}") String frontendUrl
     ) {
         this.userRepository = userRepository;
@@ -76,6 +80,7 @@ public class AuthController {
         this.loginRateLimiter = loginRateLimiter;
         this.mailSenderService = mailSenderService;
         this.auditService = auditService;
+        this.sessionService = sessionService;
         this.frontendUrl = frontendUrl;
     }
 
@@ -92,9 +97,11 @@ public class AuthController {
         user.setRole("USER");
         user = userRepository.save(user);
 
+        var checkIn = sessionService.checkIn(user.getId());
         auditService.log(user.getId(), "USER_REGISTERED", "User", user.getId().toString(), Map.of("role", user.getRole()));
-        String token = jwtService.generateToken(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token, UserDto.from(user)));
+        String token = jwtService.generateToken(user, checkIn.sessionId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new AuthResponse(token, UserDto.from(user), checkIn.sessionId(), checkIn.beaconToken()));
     }
 
     @PostMapping("/api/auth/login")
@@ -113,15 +120,23 @@ public class AuthController {
         }
 
         loginRateLimiter.reset(rateKey);
-        auditService.log(user.getId(), "USER_LOGIN", "User", user.getId().toString(), Map.of());
-        String token = jwtService.generateToken(user);
-        return ResponseEntity.ok(new AuthResponse(token, UserDto.from(user)));
+        var checkIn = sessionService.checkIn(user.getId());
+        auditService.log(user.getId(), "USER_LOGIN", "User", user.getId().toString(), Map.of("sessionId", checkIn.sessionId().toString()));
+        String token = jwtService.generateToken(user, checkIn.sessionId());
+        return ResponseEntity.ok(new AuthResponse(token, UserDto.from(user), checkIn.sessionId(), checkIn.beaconToken()));
     }
 
     @PostMapping("/api/auth/logout")
     public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        UUID activeSessionId = SessionContextHolder.getSessionId();
+        if (activeSessionId != null) {
+            try {
+                sessionService.checkOut(principal.id(), activeSessionId, "LOGOUT");
+            } catch (Exception ignored) {
+            }
         }
         userRepository.findById(principal.id()).ifPresent(user -> {
             user.setTokenRevokedBefore(Instant.now());
@@ -172,4 +187,3 @@ public class AuthController {
         return ResponseEntity.ok(UserDto.from(user));
     }
 }
-

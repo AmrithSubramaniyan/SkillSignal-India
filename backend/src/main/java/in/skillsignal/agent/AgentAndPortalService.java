@@ -12,6 +12,7 @@ import in.skillsignal.job.Job;
 import in.skillsignal.job.JobRepository;
 import in.skillsignal.rule.AutoApplyRunRepository;
 import in.skillsignal.safety.SafetyGovernorService;
+import in.skillsignal.session.SessionCheckoutEmailService;
 import in.skillsignal.source.SourceCapability;
 import in.skillsignal.source.SourceCapabilityRepository;
 import org.springframework.http.HttpStatus;
@@ -48,6 +49,7 @@ public class AgentAndPortalService {
     private final ApplicationRepository applicationRepository;
     private final SafetyGovernorService safetyGovernorService;
     private final AuditService auditService;
+    private final SessionCheckoutEmailService sessionCheckoutEmailService;
     private final ObjectMapper objectMapper;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -64,6 +66,7 @@ public class AgentAndPortalService {
             ApplicationRepository applicationRepository,
             SafetyGovernorService safetyGovernorService,
             AuditService auditService,
+            SessionCheckoutEmailService sessionCheckoutEmailService,
             ObjectMapper objectMapper
     ) {
         this.agentRepository = agentRepository;
@@ -78,6 +81,7 @@ public class AgentAndPortalService {
         this.applicationRepository = applicationRepository;
         this.safetyGovernorService = safetyGovernorService;
         this.auditService = auditService;
+        this.sessionCheckoutEmailService = sessionCheckoutEmailService;
         this.objectMapper = objectMapper;
     }
 
@@ -485,7 +489,20 @@ public class AgentAndPortalService {
                 } else {
                     task.setStatus("SUBMITTED_CONFIRMED");
                     task.setConfirmationSignal(confirmationSignal.trim());
-                    upsertTrackerApplication(userId, job, task.getPortal(), "APPLIED", "EXTERNALLY_CONFIRMED", "AGENT_MODE3");
+                    Application savedApp = upsertTrackerApplication(userId, job, task.getPortal(), "APPLIED", "EXTERNALLY_CONFIRMED", "AGENT_MODE3");
+                    if (savedApp != null && job != null) {
+                        sessionCheckoutEmailService.recordQualifyingApplicationApplied(
+                                userId,
+                                savedApp.getId(),
+                                job.getCompany(),
+                                job.getTitle(),
+                                savedApp.getAppliedAt() != null ? savedApp.getAppliedAt() : Instant.now(),
+                                "Submitted by agent",
+                                "EXTERNALLY_CONFIRMED",
+                                null,
+                                false
+                        );
+                    }
                     safetyGovernorService.reportSafetySignal(userId, task.getPortal(), "SUCCESS", "Confirmed: " + confirmationSignal);
                 }
             }
@@ -583,8 +600,8 @@ public class AgentAndPortalService {
         portalSettingRepository.save(ps);
     }
 
-    private void upsertTrackerApplication(UUID userId, Job job, String source, String status, String confirmationType, String submissionMethod) {
-        if (job == null) return;
+    private Application upsertTrackerApplication(UUID userId, Job job, String source, String status, String confirmationType, String submissionMethod) {
+        if (job == null) return null;
         Application app = applicationRepository.findByUserIdAndJobId(userId, job.getId())
                 .orElseGet(() -> {
                     Application a = new Application();
@@ -599,7 +616,7 @@ public class AgentAndPortalService {
         if ("APPLIED".equals(status) && app.getAppliedAt() == null) {
             app.setAppliedAt(Instant.now());
         }
-        applicationRepository.save(app);
+        return applicationRepository.save(app);
     }
 
     private void rejectIfContainsCredentialsOrCookies(Map<String, Object> map) {

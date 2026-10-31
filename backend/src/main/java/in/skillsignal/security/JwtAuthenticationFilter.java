@@ -1,5 +1,6 @@
 package in.skillsignal.security;
 
+import in.skillsignal.session.SessionContextHolder;
 import in.skillsignal.user.User;
 import in.skillsignal.user.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -37,41 +38,65 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7).trim();
-            try {
-                Claims claims = jwtService.parseToken(token);
-                UUID userId = UUID.fromString(claims.getSubject());
-                DateIssuedCheck:
-                {
-                    Optional<User> userOpt = userRepository.findById(userId);
-                    if (userOpt.isPresent()) {
-                        User user = userOpt.get();
-                        Instant issuedAt = claims.getIssuedAt() != null ? claims.getIssuedAt().toInstant() : Instant.EPOCH;
-                        if (user.getTokenRevokedBefore() != null && !issuedAt.isAfter(user.getTokenRevokedBefore())) {
-                            break DateIssuedCheck;
+        try {
+            String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (header != null && header.startsWith("Bearer ")) {
+                String token = header.substring(7).trim();
+                try {
+                    Claims claims = jwtService.parseToken(token);
+                    UUID userId = UUID.fromString(claims.getSubject());
+                    DateIssuedCheck:
+                    {
+                        Optional<User> userOpt = userRepository.findById(userId);
+                        if (userOpt.isPresent()) {
+                            User user = userOpt.get();
+                            Instant issuedAt = claims.getIssuedAt() != null ? claims.getIssuedAt().toInstant() : Instant.EPOCH;
+                            if (user.getTokenRevokedBefore() != null && !issuedAt.isAfter(user.getTokenRevokedBefore())) {
+                                break DateIssuedCheck;
+                            }
+                            AuthenticatedUser principal = new AuthenticatedUser(
+                                    user.getId(),
+                                    user.getEmail(),
+                                    user.getFullName(),
+                                    user.getRole()
+                            );
+                            String roleName = user.getRole().startsWith("ROLE_") ? user.getRole() : "ROLE_" + user.getRole();
+                            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                                    principal,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority(roleName))
+                            );
+                            SecurityContextHolder.getContext().setAuthentication(auth);
+
+                            UUID resolvedSessionId = null;
+                            String sessionHeader = request.getHeader("X-Session-Id");
+                            if (sessionHeader != null && !sessionHeader.isBlank()) {
+                                try {
+                                    resolvedSessionId = UUID.fromString(sessionHeader.trim());
+                                } catch (IllegalArgumentException ignored) {
+                                }
+                            }
+                            if (resolvedSessionId == null) {
+                                String claimSession = claims.get("sessionId", String.class);
+                                if (claimSession != null && !claimSession.isBlank()) {
+                                    try {
+                                        resolvedSessionId = UUID.fromString(claimSession.trim());
+                                    } catch (IllegalArgumentException ignored) {
+                                    }
+                                }
+                            }
+                            if (resolvedSessionId != null) {
+                                SessionContextHolder.setSessionId(resolvedSessionId);
+                            }
                         }
-                        AuthenticatedUser principal = new AuthenticatedUser(
-                                user.getId(),
-                                user.getEmail(),
-                                user.getFullName(),
-                                user.getRole()
-                        );
-                        String roleName = user.getRole().startsWith("ROLE_") ? user.getRole() : "ROLE_" + user.getRole();
-                        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                principal,
-                                null,
-                                List.of(new SimpleGrantedAuthority(roleName))
-                        );
-                        SecurityContextHolder.getContext().setAuthentication(auth);
                     }
+                } catch (Exception ignored) {
+                    SecurityContextHolder.clearContext();
                 }
-            } catch (Exception ignored) {
-                SecurityContextHolder.clearContext();
             }
+            filterChain.doFilter(request, response);
+        } finally {
+            SessionContextHolder.clear();
         }
-        filterChain.doFilter(request, response);
     }
 }
-

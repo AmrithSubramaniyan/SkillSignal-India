@@ -50,6 +50,10 @@ const CONSENT_LABELS: Record<string, { title: string; description: string }> = {
     title: 'Enable Email Application Sending',
     description: 'Permit preparing and sending job applications via your connected email account.',
   },
+  EMAIL_NOTIFICATIONS: {
+    title: 'Email Notifications & Session Check-out Summary Emails',
+    description: 'Allow SkillSignal to send session check-out summary emails and notification digests to your account email.',
+  },
 }
 
 export default function PrivacyPage() {

@@ -117,3 +117,4 @@ Emitted by the `session.checked-out` consumer after the configurable grace perio
   }
 }
 ```
+
