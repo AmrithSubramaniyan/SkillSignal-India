@@ -12,6 +12,8 @@ import {
   SolutionOutlined,
   SearchOutlined,
   ApiOutlined,
+  CalendarOutlined,
+  BellOutlined,
 } from '@ant-design/icons'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
@@ -21,6 +23,8 @@ import JobsPage from './pages/JobsPage'
 import JobSearchPage from './pages/JobSearchPage'
 import SourcesPage from './pages/SourcesPage'
 import TrackerPage from './pages/TrackerPage'
+import RemindersPage from './pages/RemindersPage'
+import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 
@@ -96,6 +100,16 @@ function AppShell() {
                   key: '/tracker',
                   icon: <SolutionOutlined />,
                   label: <Link to="/tracker">Tracker</Link>,
+                },
+                {
+                  key: '/reminders',
+                  icon: <CalendarOutlined />,
+                  label: <Link to="/reminders">Reminders</Link>,
+                },
+                {
+                  key: '/notifications',
+                  icon: <BellOutlined />,
+                  label: <Link to="/notifications">Notifications</Link>,
                 },
                 {
                   key: '/profile',
@@ -178,6 +192,22 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <TrackerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reminders"
+            element={
+              <ProtectedRoute>
+                <RemindersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

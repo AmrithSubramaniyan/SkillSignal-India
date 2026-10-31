@@ -127,3 +127,14 @@
    - Transitioning to `APPLIED` with `confirmationType = UNCONFIRMED` automatically sets `sub_state = NEEDS_VERIFICATION` andWithholds `applied_at` until confirmed (`USER_CONFIRMED` or `EXTERNALLY_CONFIRMED`).
 3. **Rich Tracker Metadata (`V7__sprint3_tracker_reminders_companies.sql`)**:
    - Stores `source`, `application_url`, `submission_method`, `confirmation_type`, `recruiter_contacts`, `assessment_date`, `interview_date`, `next_action`, and `follow_up_date` alongside status history drawer and filters in `TrackerPage.tsx`.
+
+## Stage 15: Reminders, Notifications, Quiet Hours & Sent-Log Deduplication (`E2, E3, E4`)
+1. **Per-User Time Zone (`Asia/Kolkata` Default) & Quiet Hours Window**:
+   - `user_notification_preferences` stores `time_zone` (default `Asia/Kolkata`), `quiet_hours_start` (default `22:00`), `quiet_hours_end` (default `08:00`), and `daily_summary_enabled`.
+   - `ReminderAndNotificationService.isWithinQuietHours` converts the evaluation `Instant` into `ZonedDateTime` in the user's `ZoneId` and handles both overnight windows (`start.isAfter(end)`, e.g. `22:00`–`08:00`) and same-day windows (`start.isBefore(end)`).
+   - During quiet hours, in-app notifications are flagged `suppressedByQuietHours = true` and daily summary emails via `MailSenderService` are suppressed.
+2. **Sent-Log Deduplication (`notification_sent_logs`)**:
+   - Enforces `UNIQUE (user_id, dedup_key, channel)` for both `IN_APP` reminder notifications (`REMINDER:{id}:DUE:{dueEpochMs}`) and `EMAIL` daily summaries (`DAILY_SUMMARY:{localDateInUserZone}`), ensuring repeated dispatch cycles never emit duplicate notifications or emails.
+3. **Never Treat Silence as Rejection & Manual Follow-Up Drafts**:
+   - Overdue `FOLLOW_UP` reminders stay actionable until completed, snoozed, or rescheduled and never alter `Application.status` to `REJECTED`.
+   - `POST /api/reminders/follow-up-draft` generates a polite follow-up email draft for the candidate to review and send manually.

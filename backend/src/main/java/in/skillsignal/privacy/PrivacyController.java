@@ -9,6 +9,10 @@ import in.skillsignal.consent.ConsentRecordRepository;
 import in.skillsignal.job.JobRepository;
 import in.skillsignal.match.JobMatchRepository;
 import in.skillsignal.profile.CareerProfileRepository;
+import in.skillsignal.reminder.NotificationRepository;
+import in.skillsignal.reminder.NotificationSentLogRepository;
+import in.skillsignal.reminder.ReminderRepository;
+import in.skillsignal.reminder.UserNotificationPreferenceRepository;
 import in.skillsignal.resume.ResumeRepository;
 import in.skillsignal.resume.ResumeVersionRepository;
 import in.skillsignal.resume.TailoredResumeRepository;
@@ -52,6 +56,10 @@ public class PrivacyController {
     private final AuditLogRepository auditLogRepository;
     private final SavedSearchRepository savedSearchRepository;
     private final TailoredResumeRepository tailoredResumeRepository;
+    private final ReminderRepository reminderRepository;
+    private final NotificationRepository notificationRepository;
+    private final NotificationSentLogRepository notificationSentLogRepository;
+    private final UserNotificationPreferenceRepository preferenceRepository;
     private final AuditService auditService;
     private final Path uploadRootDir;
 
@@ -68,6 +76,10 @@ public class PrivacyController {
             AuditLogRepository auditLogRepository,
             SavedSearchRepository savedSearchRepository,
             TailoredResumeRepository tailoredResumeRepository,
+            ReminderRepository reminderRepository,
+            NotificationRepository notificationRepository,
+            NotificationSentLogRepository notificationSentLogRepository,
+            UserNotificationPreferenceRepository preferenceRepository,
             AuditService auditService,
             @Value("${app.uploads.dir:./uploads}") String uploadDir
     ) {
@@ -83,6 +95,10 @@ public class PrivacyController {
         this.auditLogRepository = auditLogRepository;
         this.savedSearchRepository = savedSearchRepository;
         this.tailoredResumeRepository = tailoredResumeRepository;
+        this.reminderRepository = reminderRepository;
+        this.notificationRepository = notificationRepository;
+        this.notificationSentLogRepository = notificationSentLogRepository;
+        this.preferenceRepository = preferenceRepository;
         this.auditService = auditService;
         this.uploadRootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
@@ -118,6 +134,9 @@ public class PrivacyController {
         export.put("applicationEvents", applicationEventRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("savedSearches", savedSearchRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("tailoredResumes", tailoredResumeRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("reminders", reminderRepository.findByUserIdOrderByDueAtAsc(user.getId()));
+        export.put("notifications", notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("notificationPreferences", preferenceRepository.findById(user.getId()).orElse(null));
         export.put("auditLogs", auditLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         return export;
     }
@@ -146,6 +165,10 @@ public class PrivacyController {
         }
 
         // 2. Delete all user records
+        notificationSentLogRepository.deleteByUserId(user.getId());
+        notificationRepository.deleteByUserId(user.getId());
+        reminderRepository.deleteByUserId(user.getId());
+        preferenceRepository.deleteByUserId(user.getId());
         tailoredResumeRepository.deleteByUserId(user.getId());
         savedSearchRepository.deleteByUserId(user.getId());
         applicationEventRepository.deleteByUserId(user.getId());

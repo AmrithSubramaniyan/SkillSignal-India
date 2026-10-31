@@ -23,13 +23,13 @@
 ## Sprint 3: Tracker, Reminders, Companies (E1-E7) (`sprint3-v1`)
 
 - [x] **STAGE 14: FULL TRACKER (E1)** — Statuses (`INTERESTED`, `READY_TO_APPLY`, `AWAITING_APPROVAL`, `APPLIED`, `SUBMISSION_FAILED`, `ASSESSMENT`, `INTERVIEW`, `ON_HOLD`, `OFFER`, `REJECTED`, `WITHDRAWN`, `CLOSED`, sub-state `NEEDS_VERIFICATION`), `ApplicationStateMachine` legal transition enforcement, enriched fields (source, URL, submission method, recruiter contacts, assessment/interview dates, next action, confirmation type `USER_CONFIRMED` / `EXTERNALLY_CONFIRMED` / `UNCONFIRMED`), `My Applications` screen (table, filters, history drawer).
-- [ ] **STAGE 15: REMINDERS + NOTIFICATIONS (E2, E3, E4)** — Follow-up, assessment, interview, offer reminders; snooze, reschedule, complete, overdue list; per-user time zone (default `Asia/Kolkata`); in-app notification list; daily summary email via mail abstraction; sent-log preventing duplicates; quiet hours (two time fields); AI follow-up email draft (user sends); never treat silence as rejection; `Reminders and Calendar` and `Notifications` screens.
+- [x] **STAGE 15: REMINDERS + NOTIFICATIONS (E2, E3, E4)** — Follow-up, assessment, interview, offer reminders; snooze, reschedule, complete, overdue list; per-user time zone (default `Asia/Kolkata`); in-app notification list; daily summary email via mail abstraction; sent-log preventing duplicates; quiet hours (two time fields); AI follow-up email draft (user sends); never treat silence as rejection; `Reminders and Calendar` and `Notifications` screens.
 - [ ] **STAGE 16: COMPANIES (E5, E6)** — `T1`/`T2`/`T3` tier dropdown, priority list, evidence computed strictly from user's own stored jobs (30/60/90 days, roles, locations, disclosed salary) with visible note `"listings are not hires"`, `Companies` and `Hiring Intelligence (lite)` screens.
 - [ ] **STAGE 17: DASHBOARD FULL (E7)** — Today's actions, upcoming interviews, awaiting approval, high-match jobs, auto-apply status; Sprint 3 test suite (every transition, reminder boundaries, no duplicate notifications, quiet hours); tag `sprint3-v1`.
 
 ## Current Status
-- **Current Stage**: Stage 15 — Reminders + Notifications (`E2, E3, E4`)
-- **Last Commit**: Stage 14 (`feat(stage-14): add full tracker state machine, enriched application fields, and My Applications history drawer`)
-- **Next Step**: Complete Stage 15 (`ReminderAndNotificationService`, `ReminderAndNotificationController`, `RemindersPage.tsx`, `NotificationsPage.tsx`, `Stage15RemindersAndNotificationsTest`).
+- **Current Stage**: Stage 16 — Companies (`E5, E6`)
+- **Last Commit**: Stage 15 (`feat(stage-15): add reminders, notifications, quiet hours, sent-log dedup, and follow-up email draft`)
+- **Next Step**: Complete Stage 16 (`Company`, `CompanyIntelligenceService`, `CompanyController`, `CompaniesPage.tsx`, `Stage16CompaniesAndIntelligenceTest`).
 - **Open GATES**:
   - **GATE G3 (RESOLVED)**: User confirmed building the Greenhouse Public Job Board API read-only GET connector (`Assisted Apply` only) and keeping Naukri, LinkedIn, Indeed, Foundit, Instahyre, and Wellfound disabled.
