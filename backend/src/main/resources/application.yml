@@ -40,6 +40,12 @@ app:
     api-key: ${AI_API_KEY:}
     model: ${AI_MODEL:claude-3-5-sonnet-latest}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
+  match:
+    weights:
+      required-skills: ${MATCH_WEIGHT_REQUIRED_SKILLS:60}
+      nice-to-have-skills: ${MATCH_WEIGHT_NICE_TO_HAVE:10}
+      experience: ${MATCH_WEIGHT_EXPERIENCE:20}
+      location: ${MATCH_WEIGHT_LOCATION:10}
   seed-demo: ${APP_SEED_DEMO:false}
 
 springdoc:

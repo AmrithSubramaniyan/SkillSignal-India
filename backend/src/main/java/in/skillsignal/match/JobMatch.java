@@ -35,6 +35,18 @@ public class JobMatch {
     @Column(name = "location_score", nullable = false)
     private int locationScore;
 
+    @Column(name = "salary_fit", nullable = false, length = 255)
+    private String salaryFit = "not enough data";
+
+    @Column(name = "qualification_fit", nullable = false, length = 255)
+    private String qualificationFit = "not enough data";
+
+    @Column(name = "user_feedback", length = 32)
+    private String userFeedback;
+
+    @Column(name = "feedback_note", length = 500)
+    private String feedbackNote;
+
     @Column(name = "result_json", nullable = false, columnDefinition = "TEXT")
     private String resultJson;
 
@@ -50,6 +62,8 @@ public class JobMatch {
         if (id == null) id = UUID.randomUUID();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
+        if (salaryFit == null) salaryFit = "not enough data";
+        if (qualificationFit == null) qualificationFit = "not enough data";
     }
 
     @PreUpdate
@@ -75,6 +89,14 @@ public class JobMatch {
     public void setExperienceScore(int experienceScore) { this.experienceScore = experienceScore; }
     public int getLocationScore() { return locationScore; }
     public void setLocationScore(int locationScore) { this.locationScore = locationScore; }
+    public String getSalaryFit() { return salaryFit; }
+    public void setSalaryFit(String salaryFit) { this.salaryFit = salaryFit; }
+    public String getQualificationFit() { return qualificationFit; }
+    public void setQualificationFit(String qualificationFit) { this.qualificationFit = qualificationFit; }
+    public String getUserFeedback() { return userFeedback; }
+    public void setUserFeedback(String userFeedback) { this.userFeedback = userFeedback; }
+    public String getFeedbackNote() { return feedbackNote; }
+    public void setFeedbackNote(String feedbackNote) { this.feedbackNote = feedbackNote; }
     public String getResultJson() { return resultJson; }
     public void setResultJson(String resultJson) { this.resultJson = resultJson; }
     public Instant getCreatedAt() { return createdAt; }
@@ -82,4 +104,3 @@ public class JobMatch {
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
-

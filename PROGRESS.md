@@ -17,12 +17,12 @@
 - [x] **STAGE 9: SOURCE REGISTRY + CONNECTOR (C3, C4)** — `source_capabilities` table & seeded rows (`manual`, `company_ats`, `email_apply`, plus disabled rows for Naukri, LinkedIn, Indeed, Foundit, Instahyre, Wellfound marked `"no verified API access"`), Default Assisted-only, Admin switch, `GET /api/sources/capabilities`, **GATE G3** approval, and Greenhouse Public Job Board API read-only GET connector (`GreenhousePublicBoardConnector`).
 - [x] **STAGE 10: SEARCH (C5-C7)** — Natural-language query to editable filter chips (rule-based first, AI assist; 22 test queries), parallel search orchestrator with per-source timeout & partial-failure resilience, `AI Job Search` and `Connected Sources and Permissions (lite)` screens.
 - [x] **STAGE 11: DEDUP, STALE, SAVED (C8-C10)** — Duplicate merging (`company + fuzzy title + location`) preserving all source records, stale flag only on reliable evidence (`404` or `closed` flag), saved jobs, saved searches with scheduled daily refresh.
-- [ ] **STAGE 12: FULL MATCH (D2-D6)** — Salary & qualification fit (`"not enough data"` when missing), weights in config file, aggregated missing skills across saved jobs, Compare 2–3 jobs screen, thumbs up/down feedback stored.
+- [x] **STAGE 12: FULL MATCH (D2-D6)** — Salary & qualification fit (`"not enough data"` when missing), weights in config file (`app.match.weights.*`), aggregated missing skills across saved jobs, Compare 2–3 jobs screen, thumbs up/down feedback stored.
 - [ ] **STAGE 13: RESUME TOOLS (B4-B6)** — Keyword gap list & 3 tips, tailored draft (AI rewords/reorders existing content only), before/after diff, truthfulness check tracing every claim to profile/resume and blocking unsupported claims, user approval gate, download DOCX/PDF, Sprint 2 test suite, tag `sprint2-v1`.
 
 ## Current Status
-- **Current Stage**: Stage 12 — Full Match (`salaryFit` & `qualificationFit`, config weights, aggregated missing skills across saved jobs, Compare 2–3 jobs screen, thumbs up/down feedback)
-- **Last Commit**: Stage 11 (`V5__saved_searches.sql`, duplicate job merging keeping all source records, stale liveness verification, saved jobs & scheduled daily refresh)
-- **Next Step**: Complete Stage 12 (`V6__match_feedback_and_tailored_resumes.sql`, externalized match weights in `application.yml`, salary & qualification fit, missing skills aggregation, Compare 2–3 jobs screen, thumbs up/down feedback).
+- **Current Stage**: Stage 13 — Resume Tools (`B4-B6`) & Sprint 2 Close (`sprint2-v1`)
+- **Last Commit**: Stage 12 (`V6__match_feedback_and_tailored_resumes.sql`, configurable match weights, salary/qualification fit, missing skills aggregation, 2–3 job comparison, match feedback)
+- **Next Step**: Complete Stage 13 (`TailoredResume`, `TruthfulnessVerifier` blocking unsupported claims, before/after diff, user approval gate, DOCX/PDF export, full Sprint 2 test suite, tag `sprint2-v1`).
 - **Open GATES**:
   - **GATE G3 (RESOLVED)**: User confirmed building the Greenhouse Public Job Board API read-only GET connector (`Assisted Apply` only) and keeping Naukri, LinkedIn, Indeed, Foundit, Instahyre, and Wellfound disabled.

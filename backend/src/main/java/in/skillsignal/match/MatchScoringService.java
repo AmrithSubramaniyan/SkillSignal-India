@@ -1,6 +1,7 @@
 package in.skillsignal.match;
 
 import in.skillsignal.skill.SkillCatalogService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -10,9 +11,16 @@ import java.util.*;
 public class MatchScoringService {
 
     private final SkillCatalogService skillCatalogService;
+    private final MatchWeightsProperties weights;
 
     public MatchScoringService(SkillCatalogService skillCatalogService) {
+        this(skillCatalogService, new MatchWeightsProperties());
+    }
+
+    @Autowired
+    public MatchScoringService(SkillCatalogService skillCatalogService, MatchWeightsProperties weights) {
         this.skillCatalogService = skillCatalogService;
+        this.weights = weights != null ? weights : new MatchWeightsProperties();
     }
 
     public MatchResultDto computeMatch(
@@ -28,6 +36,44 @@ public class MatchScoringService {
             List<String> userPreferredCities,
             List<String> userPreferredWorkModes
     ) {
+        return computeFullMatch(
+                jobId,
+                resumeVersionId,
+                verifiedResumeSkills,
+                resumeYears,
+                jobRequiredSkills,
+                jobNiceToHaveSkills,
+                jobMinYears,
+                jobLocation,
+                jobWorkMode,
+                userPreferredCities,
+                userPreferredWorkModes,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    public MatchResultDto computeFullMatch(
+            UUID jobId,
+            UUID resumeVersionId,
+            List<String> verifiedResumeSkills,
+            Double resumeYears,
+            List<String> jobRequiredSkills,
+            List<String> jobNiceToHaveSkills,
+            Double jobMinYears,
+            String jobLocation,
+            String jobWorkMode,
+            List<String> userPreferredCities,
+            List<String> userPreferredWorkModes,
+            Double candidateExpectedSalary,
+            Double jobSalaryMin,
+            Double jobSalaryMax,
+            String candidateEducationText,
+            String jobRequiredEducation
+    ) {
         Map<String, String> aliasMap = skillCatalogService.buildAliasToCanonicalMap();
 
         Set<String> candidateCanonicalLower = new HashSet<>();
@@ -40,7 +86,12 @@ public class MatchScoringService {
             }
         }
 
-        // 1. Required skills (max 60)
+        int maxReqWeight = weights.getRequiredSkills();
+        int maxNiceWeight = weights.getNiceToHaveSkills();
+        int maxExpWeight = weights.getExperience();
+        int maxLocWeight = weights.getLocation();
+
+        // 1. Required skills (configured weight, default 60)
         List<String> matchedRequired = new ArrayList<>();
         List<String> missingRequired = new ArrayList<>();
         List<String> deduplicatedReq = deduplicateSkills(jobRequiredSkills, aliasMap);
@@ -55,12 +106,12 @@ public class MatchScoringService {
 
         int requiredSkillsScore;
         if (deduplicatedReq.isEmpty()) {
-            requiredSkillsScore = 60;
+            requiredSkillsScore = maxReqWeight;
         } else {
-            requiredSkillsScore = Math.round(60.0f * matchedRequired.size() / deduplicatedReq.size());
+            requiredSkillsScore = Math.round((float) maxReqWeight * matchedRequired.size() / deduplicatedReq.size());
         }
 
-        // 2. Nice-to-have skills (max 10; full 10 if none listed)
+        // 2. Nice-to-have skills (configured weight, default 10; full if none listed)
         List<String> matchedNice = new ArrayList<>();
         List<String> missingNice = new ArrayList<>();
         List<String> deduplicatedNice = deduplicateSkills(jobNiceToHaveSkills, aliasMap);
@@ -77,29 +128,33 @@ public class MatchScoringService {
 
         int niceToHaveScore;
         if (deduplicatedNice.isEmpty()) {
-            niceToHaveScore = 10;
+            niceToHaveScore = maxNiceWeight;
         } else {
-            niceToHaveScore = Math.round(10.0f * matchedNice.size() / deduplicatedNice.size());
+            niceToHaveScore = Math.round((float) maxNiceWeight * matchedNice.size() / deduplicatedNice.size());
         }
 
-        // 3. Experience (max 20; full 20 if resumeYears >= required; scaled below; 10 if unstated)
+        // 3. Experience (configured weight, default 20; half if unstated)
         int experienceScore;
         String experienceFit;
         double candidateYrs = resumeYears != null ? Math.max(0.0, resumeYears) : 0.0;
         if (jobMinYears == null) {
-            experienceScore = 10;
-            experienceFit = String.format(Locale.US, "Unstated in JD (Resume: %.1f yrs — neutral 10/20 applied)", candidateYrs);
+            experienceScore = maxExpWeight / 2;
+            experienceFit = String.format(Locale.US, "Unstated in JD (Resume: %.1f yrs — neutral %d/%d applied)", candidateYrs, experienceScore, maxExpWeight);
         } else if (jobMinYears <= 0.0 || candidateYrs >= jobMinYears) {
-            experienceScore = 20;
+            experienceScore = maxExpWeight;
             experienceFit = String.format(Locale.US, "Meets requirement (Resume: %.1f yrs vs Required: %.1f+ yrs)", candidateYrs, jobMinYears);
         } else {
-            experienceScore = Math.max(0, Math.min(20, Math.round((float) (20.0 * (candidateYrs / jobMinYears)))));
+            experienceScore = Math.max(0, Math.min(maxExpWeight, Math.round((float) (maxExpWeight * (candidateYrs / jobMinYears)))));
             experienceFit = String.format(Locale.US, "Below requirement (Resume: %.1f yrs vs Required: %.1f+ yrs)", candidateYrs, jobMinYears);
         }
 
-        // 4. Location / Work Mode (max 10)
-        int locationScore = computeLocationScore(jobLocation, jobWorkMode, userPreferredCities, userPreferredWorkModes);
-        String locationFit = buildLocationFitDescription(locationScore, jobLocation, jobWorkMode);
+        // 4. Location / Work Mode (configured weight, default 10)
+        int locationScore = computeLocationScore(jobLocation, jobWorkMode, userPreferredCities, userPreferredWorkModes, maxLocWeight);
+        String locationFit = buildLocationFitDescription(locationScore, maxLocWeight, jobLocation, jobWorkMode);
+
+        // 5. Salary Fit & Qualification Fit ("not enough data" unless both sides exist)
+        String salaryFit = computeSalaryFit(candidateExpectedSalary, jobSalaryMin, jobSalaryMax);
+        String qualificationFit = computeQualificationFit(candidateEducationText, jobRequiredEducation);
 
         int totalScore = Math.max(0, Math.min(100, requiredSkillsScore + niceToHaveScore + experienceScore + locationScore));
 
@@ -122,10 +177,59 @@ public class MatchScoringService {
                 missingNice,
                 experienceFit,
                 locationFit,
+                salaryFit,
+                qualificationFit,
+                null,
+                null,
                 suggestions,
                 MatchResultDto.MANDATORY_DISCLAIMER,
                 Instant.now()
         );
+    }
+
+    public String computeSalaryFit(Double candidateExpected, Double jobMin, Double jobMax) {
+        if (candidateExpected == null || candidateExpected <= 0.0 || (jobMin == null && jobMax == null)) {
+            return MatchResultDto.NOT_ENOUGH_DATA;
+        }
+        double effectiveJobCeiling = jobMax != null ? jobMax : jobMin;
+        double effectiveJobFloor = jobMin != null ? jobMin : jobMax;
+        if (effectiveJobCeiling >= candidateExpected) {
+            return String.format(Locale.US, "Aligned (Job range %.1f-%.1f vs Expected %.1f)",
+                    effectiveJobFloor, effectiveJobCeiling, candidateExpected);
+        } else if (effectiveJobCeiling >= candidateExpected * 0.85) {
+            return String.format(Locale.US, "Close fit (Job range %.1f-%.1f vs Expected %.1f)",
+                    effectiveJobFloor, effectiveJobCeiling, candidateExpected);
+        }
+        return String.format(Locale.US, "Below expectation (Job range %.1f-%.1f vs Expected %.1f)",
+                effectiveJobFloor, effectiveJobCeiling, candidateExpected);
+    }
+
+    public String computeQualificationFit(String candidateEducation, String jobRequiredEducation) {
+        if (candidateEducation == null || candidateEducation.isBlank()
+                || jobRequiredEducation == null || jobRequiredEducation.isBlank()) {
+            return MatchResultDto.NOT_ENOUGH_DATA;
+        }
+        String candLower = candidateEducation.toLowerCase(Locale.ROOT);
+        String reqLower = jobRequiredEducation.toLowerCase(Locale.ROOT);
+
+        List<String> tokens = List.of("b.tech", "btech", "b.e", "m.tech", "mtech", "mca", "bca", "b.sc", "m.sc",
+                "mba", "ca", "chartered accountant", "mbbs", "b.pharm", "m.pharm", "llb", "bachelor", "master", "computer science", "engineering");
+        boolean matchedAny = false;
+        for (String t : tokens) {
+            if (reqLower.contains(t) && candLower.contains(t)) {
+                matchedAny = true;
+                break;
+            }
+        }
+        if (!matchedAny && (reqLower.contains("b.tech") || reqLower.contains("b.e") || reqLower.contains("bachelor"))) {
+            if (candLower.contains("b.tech") || candLower.contains("b.e") || candLower.contains("bachelor") || candLower.contains("engineering")) {
+                matchedAny = true;
+            }
+        }
+        if (matchedAny) {
+            return "Meets qualification (" + jobRequiredEducation.trim() + ")";
+        }
+        return "Verify qualification (" + jobRequiredEducation.trim() + " vs Resume: " + candidateEducation.trim() + ")";
     }
 
     private List<String> deduplicateSkills(List<String> rawSkills, Map<String, String> aliasMap) {
@@ -147,7 +251,8 @@ public class MatchScoringService {
             String jobLocation,
             String jobWorkMode,
             List<String> userCities,
-            List<String> userWorkModes
+            List<String> userWorkModes,
+            int maxLocWeight
     ) {
         String jLoc = jobLocation != null ? jobLocation.trim().toLowerCase(Locale.ROOT) : "";
         String jMode = jobWorkMode != null ? jobWorkMode.trim().toUpperCase(Locale.ROOT) : "";
@@ -157,7 +262,7 @@ public class MatchScoringService {
                 || userWorkModes.stream().anyMatch(m -> m != null && m.trim().equalsIgnoreCase(jMode));
 
         if (remoteJob && modeMatched) {
-            return 10;
+            return maxLocWeight;
         }
 
         boolean cityMatched = false;
@@ -174,9 +279,9 @@ public class MatchScoringService {
             }
         }
 
-        if (cityMatched && modeMatched) return 10;
-        if (cityMatched || modeMatched) return 7;
-        return 4;
+        if (cityMatched && modeMatched) return maxLocWeight;
+        if (cityMatched || modeMatched) return Math.round(maxLocWeight * 0.7f);
+        return Math.round(maxLocWeight * 0.4f);
     }
 
     private String normalizeCity(String c) {
@@ -186,12 +291,12 @@ public class MatchScoringService {
         return lower;
     }
 
-    private String buildLocationFitDescription(int score, String jobLocation, String jobWorkMode) {
+    private String buildLocationFitDescription(int score, int maxLocWeight, String jobLocation, String jobWorkMode) {
         String loc = (jobLocation != null && !jobLocation.isBlank()) ? jobLocation : "Unspecified";
         String mode = (jobWorkMode != null && !jobWorkMode.isBlank()) ? jobWorkMode : "ONSITE";
-        if (score >= 10) {
+        if (score >= maxLocWeight) {
             return "Strong alignment with preferred location/work mode (" + loc + " / " + mode + ")";
-        } else if (score >= 7) {
+        } else if (score >= Math.round(maxLocWeight * 0.7f)) {
             return "Partial alignment with preferred location or work mode (" + loc + " / " + mode + ")";
         }
         return "Different city or work mode from profile preferences (" + loc + " / " + mode + ")";
@@ -237,4 +342,3 @@ public class MatchScoringService {
         return suggestions;
     }
 }
-

@@ -98,3 +98,13 @@
    - `verifyJobStaleness` sets `is_stale = true` ONLY when `explicitClosedFlag == true` or `observedHttpStatus` is `404`/`410`. Transient `500`/`429` errors or older posting dates never mark a job stale.
 3. **Saved Searches with Scheduled Daily Refresh (`V5__saved_searches.sql`)**:
    - `SavedSearchService.runScheduledDailyRefresh()` runs via `@Scheduled(cron = "${app.search.daily-refresh-cron:0 0 6 * * *}")` across all active saved searches and updates `last_refreshed_at` and `last_match_count`.
+
+## Stage 12: Full Match Analysis, Configurable Weights, Comparison & Feedback
+1. **Externalized Match Weights (`MatchWeightsProperties`)**:
+   - Configured in `application.yml` under `app.match.weights` (`required-skills: 60`, `nice-to-have-skills: 10`, `experience: 20`, `location: 10`).
+2. **Salary & Qualification Fit (`"not enough data"` Default)**:
+   - `computeSalaryFit` and `computeQualificationFit` return `"not enough data"` unless both candidate profile/resume data and job posting data exist, preventing fabricated comparisons.
+3. **Aggregated Missing Skills, 2–3 Job Comparison & Thumbs Feedback**:
+   - `GET /api/jobs/missing-skills-summary` aggregates missing required skills across all saved jobs sorted by job frequency.
+   - `POST /api/jobs/compare` compares 2 to 3 user-selected jobs side-by-side.
+   - `PUT /api/jobs/{id}/match/feedback` stores `THUMBS_UP` / `THUMBS_DOWN` and optional notes on `job_matches`.
