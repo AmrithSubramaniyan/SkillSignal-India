@@ -10,6 +10,7 @@ import {
   SettingOutlined,
   SafetyCertificateOutlined,
   FileTextOutlined,
+  AimOutlined,
 } from '@ant-design/icons'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { apiClient } from './api/client'
@@ -17,6 +18,7 @@ import LoginPage from './pages/LoginPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 import ResumesPage from './pages/ResumesPage'
+import JobsPage from './pages/JobsPage'
 
 const { Header, Content } = Layout
 const { Title, Paragraph, Text } = Typography
@@ -135,6 +137,11 @@ function AppShell() {
                   label: <Link to="/resumes">Resumes</Link>,
                 },
                 {
+                  key: '/jobs',
+                  icon: <AimOutlined />,
+                  label: <Link to="/jobs">Jobs & Match</Link>,
+                },
+                {
                   key: '/profile',
                   icon: <SettingOutlined />,
                   label: <Link to="/profile">Profile & Settings</Link>,
@@ -183,6 +190,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <ResumesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <ProtectedRoute>
+                <JobsPage />
               </ProtectedRoute>
             }
           />

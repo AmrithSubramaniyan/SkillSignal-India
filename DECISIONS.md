@@ -46,3 +46,14 @@
    - Files are stored under `./uploads/{userId}/{uuid}` using a server-generated UUID so user-supplied filenames can never cause path traversal.
 2. **Verified Skills Gate**:
    - AI extraction populates `parsed_json`, and initializes `verified_skills_json`. Users can edit and save `verifiedSkills` and `yearsOfExperience` per version (up to 3 versions per user, 1 default). Only verified skills drive job match scoring.
+
+## Stage 6: AI Adapter, Job Parsing & Deterministic Java Match Scorer
+1. **Unified `AiClient` (`DelegatingAiClient`)**:
+   - Defaults to `mock` (offline dictionary + regex parser backed by the 305-skill catalog).
+   - Supports `anthropic` and `openai` via `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL` with 30-second HTTP timeout, 1 retry on invalid JSON, 15,000-character input limit, SHA-256 content cache, and 502 error handling on upstream failure.
+2. **Deterministic Java Match Scoring (`MatchScoringService`)**:
+   - Required skills: 60 pts (full 60 if none listed; no division by zero).
+   - Nice-to-have skills: 10 pts (full 10 if none listed).
+   - Experience: 20 pts (full 20 if `resumeYears >= required`, scaled below, neutral 10 if unstated).
+   - Location/Work mode: 10 pts (supports Indian city aliases like Bangalore/Bengaluru and Gurgaon/Gurugram).
+   - Always emits 3 conditional suggestions (never advising users to claim skills they lack) and the mandatory disclaimer.
