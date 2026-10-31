@@ -7,3 +7,4 @@ import java.util.UUID;
 public interface UserNotificationPreferenceRepository extends JpaRepository<UserNotificationPreference, UUID> {
     void deleteByUserId(UUID userId);
 }
+

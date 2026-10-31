@@ -42,3 +42,4 @@ export interface PortalAdapter {
   submit(): Promise<void>;
   detectConfirmation(): Promise<ConfirmationDetection>;
 }
+

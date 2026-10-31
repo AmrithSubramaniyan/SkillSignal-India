@@ -237,5 +237,16 @@
 2. **Auto-Apply Centre (`AutoApplyCentrePage.tsx` & `GET /api/auto-apply/centre`)**:
    - Consolidates funnel counts, daily/weekly rate-limit meters, per-source status & circuit breaker state, active blockers waiting for user intervention, skip-reason feedback, big emergency `STOP` button, and an explicitly labelled time-saved estimate (`15 mins per prepared pack`).
 
+## Stage 30, 31, 32 & 33: Analytics, Career, Production & Final Close (`G1–G6, H1–H4`, `sprint6-v1`, `v1.0.0-lite`)
+1. **Job-Search Analytics (`AnalyticsService` & `AnalyticsPage.tsx`)**:
+   - Exposes all 6 core metrics (applications per week, by status, response rate with explicit formula string, results by resume version, follow-up completion, and discovered vs saved vs applied funnel) with sample sizes (`sampleSize`) on every metric.
+   - Includes only disclosed salary ranges (`salaryMin != null || salaryMax != null`) and never estimates undisclosed salaries.
+2. **Skill Roadmap & Interview Preparation (`CareerService` & `CareerPage.tsx`)**:
+   - Generates a weekly skill roadmap from missing skills with checkbox progress and curated learning links from `seed/learning-links.json`.
+   - Provides topic sets for `Java`, `Spring Boot`, `SQL`, `Microservices`, `Kafka`, `DSA`, plus dynamic sets for any custom field, JD-specific technical questions, behavioural/project questions, and a text mock interview evaluator with rubric scores and weak-topic tracking. Every response includes the mandatory disclaimer: `"Practice and preparation feedback only — never predicts or claims a real interview outcome."`
+3. **Production Readiness, Tested Backup/Restore & Compliance (`ProductionAndBusinessController`, `docs/SECURITY_REPORT.md`)**:
+   - Seeds the Free vs Paid `feature_flags` comparison table (`paymentsEnabled = false`), user feedback form, usage events, known-issues list, `docker-compose.staging.yml`, tested `scripts/backup-db.ps1` and `scripts/restore-db.ps1`, and **GATE G7** legal review reminder.
+
+
 
 

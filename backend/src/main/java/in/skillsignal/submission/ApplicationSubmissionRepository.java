@@ -14,3 +14,4 @@ public interface ApplicationSubmissionRepository extends JpaRepository<Applicati
     Optional<ApplicationSubmission> findByUserIdAndApprovalTokenHash(UUID userId, String approvalTokenHash);
     void deleteByUserId(UUID userId);
 }
+

@@ -12,3 +12,4 @@ public interface AutoApplyRunRepository extends JpaRepository<AutoApplyRun, UUID
     boolean existsByUserIdAndDryRunTrue(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

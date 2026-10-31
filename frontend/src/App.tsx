@@ -33,6 +33,9 @@ import AutoApplySettingsPage from './pages/AutoApplySettingsPage'
 import AssistedApplyPage from './pages/AssistedApplyPage'
 import ApprovalQueuePage from './pages/ApprovalQueuePage'
 import AutoApplyCentrePage from './pages/AutoApplyCentrePage'
+import AnalyticsPage from './pages/AnalyticsPage'
+import CareerPage from './pages/CareerPage'
+import ProductionPage from './pages/ProductionPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 
@@ -143,6 +146,21 @@ function AppShell() {
                   key: '/auto-apply-settings',
                   icon: <SafetyCertificateOutlined />,
                   label: <Link to="/auto-apply-settings">Apply Rules</Link>,
+                },
+                {
+                  key: '/analytics',
+                  icon: <DashboardOutlined />,
+                  label: <Link to="/analytics">Analytics</Link>,
+                },
+                {
+                  key: '/career',
+                  icon: <SolutionOutlined />,
+                  label: <Link to="/career">Career & Prep</Link>,
+                },
+                {
+                  key: '/plans',
+                  icon: <SafetyCertificateOutlined />,
+                  label: <Link to="/plans">Plans & Feedback</Link>,
                 },
                 {
                   key: '/profile',
@@ -273,6 +291,30 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <AutoApplyCentrePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/career"
+            element={
+              <ProtectedRoute>
+                <CareerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/plans"
+            element={
+              <ProtectedRoute>
+                <ProductionPage />
               </ProtectedRoute>
             }
           />

@@ -12,3 +12,4 @@ public interface AutoApplyRuleRepository extends JpaRepository<AutoApplyRule, UU
     long countByUserId(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

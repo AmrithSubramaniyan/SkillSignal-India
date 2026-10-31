@@ -410,3 +410,4 @@ class Stage27And28Mode3AndPlaywrightAgentTest {
                 .andExpect(status().isUnauthorized());
     }
 }
+

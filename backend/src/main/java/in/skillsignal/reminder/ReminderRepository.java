@@ -11,3 +11,4 @@ public interface ReminderRepository extends JpaRepository<Reminder, UUID> {
     Optional<Reminder> findByIdAndUserId(UUID id, UUID userId);
     void deleteByUserId(UUID userId);
 }
+

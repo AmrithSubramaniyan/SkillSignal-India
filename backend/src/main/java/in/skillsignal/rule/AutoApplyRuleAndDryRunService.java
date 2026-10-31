@@ -31,10 +31,10 @@ public class AutoApplyRuleAndDryRunService {
     public static final int MAX_CONDITIONS_PER_RULE = 3;
 
     public record RuleConditionDto(
-            String field,    // WORK_MODE, LOCATION, TITLE_KEYWORD, MIN_MATCH_SCORE, SOURCE, COMPANY
+            String field, // WORK_MODE, LOCATION, TITLE_KEYWORD, MIN_MATCH_SCORE, SOURCE, COMPANY
             String operator, // EQUALS, CONTAINS, GTE
-            String value
-    ) {}
+            String value) {
+    }
 
     public record AutoApplyRuleDto(
             UUID id,
@@ -52,8 +52,8 @@ public class AutoApplyRuleAndDryRunService {
             boolean overrideCompanyCooldownIfApproved,
             int minSpreadMinutes,
             Instant createdAt,
-            Instant updatedAt
-    ) {}
+            Instant updatedAt) {
+    }
 
     public record JobDryRunItemDto(
             UUID jobId,
@@ -67,10 +67,11 @@ public class AutoApplyRuleAndDryRunService {
             boolean companyCooldownPassed,
             String tierPolicyOutcome,
             boolean wouldMatch,
-            String routingOutcome, // WOULD_MATCH_ELIGIBLE, ROUTE_TO_REVIEW_T1, ROUTE_TO_REVIEW, SKIPPED_NOT_MATCHED
+            String routingOutcome, // WOULD_MATCH_ELIGIBLE, ROUTE_TO_REVIEW_T1, ROUTE_TO_REVIEW,
+                                   // SKIPPED_NOT_MATCHED
             int scheduledSpreadOffsetMinutes,
-            String explanation
-    ) {}
+            String explanation) {
+    }
 
     public record AutoApplyRunDto(
             UUID id,
@@ -82,8 +83,8 @@ public class AutoApplyRuleAndDryRunService {
             int submissionsCreatedCount,
             String summaryText,
             List<JobDryRunItemDto> items,
-            Instant createdAt
-    ) {}
+            Instant createdAt) {
+    }
 
     private final AutoApplyRuleRepository ruleRepository;
     private final AutoApplyRunRepository runRepository;
@@ -104,8 +105,7 @@ public class AutoApplyRuleAndDryRunService {
             ApplicationRepository applicationRepository,
             UserNotificationPreferenceRepository notificationPreferenceRepository,
             StrictEligibilityService eligibilityService,
-            ObjectMapper objectMapper
-    ) {
+            ObjectMapper objectMapper) {
         this.ruleRepository = ruleRepository;
         this.runRepository = runRepository;
         this.jobRepository = jobRepository;
@@ -137,14 +137,12 @@ public class AutoApplyRuleAndDryRunService {
             String timeWindowEnd,
             Integer companyCooldownDays,
             Boolean overrideCompanyCooldownIfApproved,
-            Integer minSpreadMinutes
-    ) {
+            Integer minSpreadMinutes) {
         long existingCount = ruleRepository.countByUserId(userId);
         if (existingCount >= MAX_RULES_PER_USER) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Maximum " + MAX_RULES_PER_USER + " auto-apply rules allowed per user"
-            );
+                    "Maximum " + MAX_RULES_PER_USER + " auto-apply rules allowed per user");
         }
         validateRuleInputs(ruleName, conditions, tierT1Policy, timeWindowStart, timeWindowEnd);
 
@@ -157,7 +155,8 @@ public class AutoApplyRuleAndDryRunService {
         rule.setTierT1Policy("REVIEW"); // T1 is strictly REVIEW
         rule.setTierT2Policy(normalizeTierPolicy(tierT2Policy, "ELIGIBLE"));
         rule.setTierT3Policy(normalizeTierPolicy(tierT3Policy, "ELIGIBLE"));
-        rule.setTimeWindowStart(timeWindowStart != null && !timeWindowStart.isBlank() ? timeWindowStart.trim() : "09:00");
+        rule.setTimeWindowStart(
+                timeWindowStart != null && !timeWindowStart.isBlank() ? timeWindowStart.trim() : "09:00");
         rule.setTimeWindowEnd(timeWindowEnd != null && !timeWindowEnd.isBlank() ? timeWindowEnd.trim() : "19:00");
         rule.setCompanyCooldownDays(companyCooldownDays != null && companyCooldownDays >= 0 ? companyCooldownDays : 30);
         rule.setOverrideCompanyCooldownIfApproved(Boolean.TRUE.equals(overrideCompanyCooldownIfApproved));
@@ -182,22 +181,19 @@ public class AutoApplyRuleAndDryRunService {
             String timeWindowEnd,
             Integer companyCooldownDays,
             Boolean overrideCompanyCooldownIfApproved,
-            Integer minSpreadMinutes
-    ) {
+            Integer minSpreadMinutes) {
         AutoApplyRule rule = ruleRepository.findByIdAndUserId(ruleId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rule not found"));
 
         if (conditions != null && conditions.size() > MAX_CONDITIONS_PER_RULE) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Maximum " + MAX_CONDITIONS_PER_RULE + " conditions allowed per rule"
-            );
+                    "Maximum " + MAX_CONDITIONS_PER_RULE + " conditions allowed per rule");
         }
         if (tierT1Policy != null && !tierT1Policy.isBlank() && !"REVIEW".equalsIgnoreCase(tierT1Policy.trim())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Per-tier policy for T1 companies must always be REVIEW"
-            );
+                    "Per-tier policy for T1 companies must always be REVIEW");
         }
         if (ruleName != null && !ruleName.isBlank()) {
             rule.setRuleName(ruleName.trim());
@@ -256,12 +252,14 @@ public class AutoApplyRuleAndDryRunService {
 
     /**
      * Executes an auto-apply run across the user's ordered rules.
-     * In dry_run=true mode (and whenever Mode 3 is not explicitly active), creates ZERO submissions
+     * In dry_run=true mode (and whenever Mode 3 is not explicitly active), creates
+     * ZERO submissions
      * and stores a preview summary "Would have matched N of M jobs".
      */
     @Transactional
     public AutoApplyRunDto executeRun(UUID userId, boolean dryRun, Instant evaluationTime) {
-        List<AutoApplyRule> activeRules = ruleRepository.findByUserIdOrderByPriorityOrderAscCreatedAtAsc(userId).stream()
+        List<AutoApplyRule> activeRules = ruleRepository.findByUserIdOrderByPriorityOrderAscCreatedAtAsc(userId)
+                .stream()
                 .filter(AutoApplyRule::isEnabled)
                 .toList();
         return runDryEvaluationInternal(userId, activeRules, null, true, evaluationTime);
@@ -284,8 +282,7 @@ public class AutoApplyRuleAndDryRunService {
             List<AutoApplyRule> rulesToEvaluate,
             UUID specificRuleId,
             boolean dryRun,
-            Instant evaluationTime
-    ) {
+            Instant evaluationTime) {
         Instant now = evaluationTime != null ? evaluationTime : Instant.now();
         List<Job> userJobs = jobRepository.findByUserIdOrderByCreatedAtDesc(userId);
         Map<UUID, Job> jobsById = new HashMap<>();
@@ -338,8 +335,7 @@ public class AutoApplyRuleAndDryRunService {
                         false,
                         "SKIPPED_NOT_MATCHED",
                         0,
-                        "Did not match any active rule conditions"
-                ));
+                        "Did not match any active rule conditions"));
                 continue;
             }
 
@@ -354,14 +350,15 @@ public class AutoApplyRuleAndDryRunService {
                     matchedRule.getTimeWindowStart(),
                     matchedRule.getTimeWindowEnd(),
                     now,
-                    zoneId
-            );
+                    zoneId);
 
-            // Check 30-day per-company cooldown (one application per company per N days unless approved)
+            // Check 30-day per-company cooldown (one application per company per N days
+            // unless approved)
             Instant companyCutoff = now.minus(matchedRule.getCompanyCooldownDays(), ChronoUnit.DAYS);
             boolean hasRecentCompanyApp = userApps.stream().anyMatch(a -> {
                 Job appJob = jobsById.get(a.getJobId());
-                if (appJob == null || appJob.getCompany() == null || job.getCompany() == null) return false;
+                if (appJob == null || appJob.getCompany() == null || job.getCompany() == null)
+                    return false;
                 return appJob.getCompany().trim().equalsIgnoreCase(job.getCompany().trim())
                         && a.getCreatedAt() != null
                         && !a.getCreatedAt().isBefore(companyCutoff);
@@ -369,10 +366,10 @@ public class AutoApplyRuleAndDryRunService {
             boolean companyCooldownPassed = !hasRecentCompanyApp || matchedRule.isOverrideCompanyCooldownIfApproved();
 
             StrictEligibilityService.StrictEligibilityResultDto elig = eligibilityService.evaluateForUserAndJob(
-                    userId, job.getId(), null, now
-            );
+                    userId, job.getId(), null, now);
 
-            // A job "matches" the rule & criteria when rule conditions pass, strict skill+experience criteria pass,
+            // A job "matches" the rule & criteria when rule conditions pass, strict
+            // skill+experience criteria pass,
             // company cooldown passes, and within remaining daily/weekly caps
             boolean criteriaCheckPassed = elig.nineChecks().stream()
                     .filter(c -> c.checkNumber() == 2)
@@ -390,12 +387,16 @@ public class AutoApplyRuleAndDryRunService {
             if (!wouldMatch) {
                 routingOutcome = "ROUTE_TO_REVIEW";
                 List<String> reasons = new ArrayList<>();
-                if (!criteriaCheckPassed) reasons.add("Strict skill/experience rule failed");
+                if (!criteriaCheckPassed)
+                    reasons.add("Strict skill/experience rule failed");
                 if (!companyCooldownPassed) {
-                    reasons.add("Company cooldown active (1 application per " + matchedRule.getCompanyCooldownDays() + " days for " + job.getCompany() + ")");
+                    reasons.add("Company cooldown active (1 application per " + matchedRule.getCompanyCooldownDays()
+                            + " days for " + job.getCompany() + ")");
                 }
-                if (job.isStale()) reasons.add("Job is stale/closed");
-                if (matchedCount >= pref.getDailyCap()) reasons.add("Daily cap limit reached");
+                if (job.isStale())
+                    reasons.add("Job is stale/closed");
+                if (matchedCount >= pref.getDailyCap())
+                    reasons.add("Daily cap limit reached");
                 explanation = "Routed to Review / Skipped: " + String.join("; ", reasons);
             } else {
                 matchedCount++;
@@ -432,8 +433,7 @@ public class AutoApplyRuleAndDryRunService {
                     wouldMatch,
                     routingOutcome,
                     spreadMinutes,
-                    explanation
-            ));
+                    explanation));
         }
 
         String summary = "Would have matched " + matchedCount + " of " + userJobs.size() + " jobs";
@@ -457,7 +457,8 @@ public class AutoApplyRuleAndDryRunService {
             return true;
         }
         for (RuleConditionDto cond : conditions) {
-            if (cond == null || cond.field() == null || cond.value() == null) continue;
+            if (cond == null || cond.field() == null || cond.value() == null)
+                continue;
             String field = cond.field().trim().toUpperCase(Locale.ROOT);
             String op = cond.operator() != null ? cond.operator().trim().toUpperCase(Locale.ROOT) : "CONTAINS";
             String val = cond.value().trim();
@@ -478,13 +479,15 @@ public class AutoApplyRuleAndDryRunService {
                 }
                 default -> true;
             };
-            if (!matched) return false;
+            if (!matched)
+                return false;
         }
         return true;
     }
 
     private boolean matchString(String actual, String operator, String expected) {
-        if (actual == null) return false;
+        if (actual == null)
+            return false;
         if ("EQUALS".equals(operator)) {
             return actual.trim().equalsIgnoreCase(expected);
         }
@@ -492,7 +495,8 @@ public class AutoApplyRuleAndDryRunService {
     }
 
     private String resolveCompanyTier(String companyName, Map<String, String> companyTiers) {
-        if (companyName == null) return "T2";
+        if (companyName == null)
+            return "T2";
         return companyTiers.getOrDefault(companyName.trim().toLowerCase(Locale.ROOT), "T2");
     }
 
@@ -500,7 +504,8 @@ public class AutoApplyRuleAndDryRunService {
         LocalTime local = ZonedDateTime.ofInstant(instant, zone).toLocalTime();
         LocalTime start = parseTime(startStr);
         LocalTime end = parseTime(endStr);
-        if (start.equals(end)) return true;
+        if (start.equals(end))
+            return true;
         if (start.isBefore(end)) {
             return !local.isBefore(start) && !local.isAfter(end);
         } else {
@@ -513,22 +518,19 @@ public class AutoApplyRuleAndDryRunService {
             List<RuleConditionDto> conditions,
             String tierT1Policy,
             String timeWindowStart,
-            String timeWindowEnd
-    ) {
+            String timeWindowEnd) {
         if (ruleName == null || ruleName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ruleName is required");
         }
         if (conditions != null && conditions.size() > MAX_CONDITIONS_PER_RULE) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Maximum " + MAX_CONDITIONS_PER_RULE + " conditions allowed per rule"
-            );
+                    "Maximum " + MAX_CONDITIONS_PER_RULE + " conditions allowed per rule");
         }
         if (tierT1Policy != null && !tierT1Policy.isBlank() && !"REVIEW".equalsIgnoreCase(tierT1Policy.trim())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Per-tier policy for T1 companies must always be REVIEW"
-            );
+                    "Per-tier policy for T1 companies must always be REVIEW");
         }
         if (timeWindowStart != null && !timeWindowStart.isBlank()) {
             parseTime(timeWindowStart.trim());
@@ -539,7 +541,8 @@ public class AutoApplyRuleAndDryRunService {
     }
 
     private String normalizeTierPolicy(String raw, String fallback) {
-        if (raw == null || raw.isBlank()) return fallback;
+        if (raw == null || raw.isBlank())
+            return fallback;
         String norm = raw.trim().toUpperCase(Locale.ROOT);
         if (!Set.of("REVIEW", "ELIGIBLE", "SKIP").contains(norm)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid tier policy: " + raw);
@@ -551,7 +554,8 @@ public class AutoApplyRuleAndDryRunService {
         try {
             return LocalTime.parse(hhmm);
         } catch (DateTimeParseException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid time window format (expected HH:mm): " + hhmm);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid time window format (expected HH:mm): " + hhmm);
         }
     }
 
@@ -572,14 +576,14 @@ public class AutoApplyRuleAndDryRunService {
                 r.isOverrideCompanyCooldownIfApproved(),
                 r.getMinSpreadMinutes(),
                 r.getCreatedAt(),
-                r.getUpdatedAt()
-        );
+                r.getUpdatedAt());
     }
 
     private AutoApplyRunDto toRunDto(AutoApplyRun run) {
         List<JobDryRunItemDto> items = List.of();
         try {
-            items = objectMapper.readValue(run.getResultsJson(), new TypeReference<List<JobDryRunItemDto>>() {});
+            items = objectMapper.readValue(run.getResultsJson(), new TypeReference<List<JobDryRunItemDto>>() {
+            });
         } catch (Exception ignored) {
         }
         return new AutoApplyRunDto(
@@ -592,14 +596,15 @@ public class AutoApplyRuleAndDryRunService {
                 run.getSubmissionsCreatedCount(),
                 run.getSummaryText(),
                 items,
-                run.getCreatedAt()
-        );
+                run.getCreatedAt());
     }
 
     private List<RuleConditionDto> parseConditions(String json) {
-        if (json == null || json.isBlank()) return List.of();
+        if (json == null || json.isBlank())
+            return List.of();
         try {
-            return objectMapper.readValue(json, new TypeReference<List<RuleConditionDto>>() {});
+            return objectMapper.readValue(json, new TypeReference<List<RuleConditionDto>>() {
+            });
         } catch (Exception e) {
             return List.of();
         }

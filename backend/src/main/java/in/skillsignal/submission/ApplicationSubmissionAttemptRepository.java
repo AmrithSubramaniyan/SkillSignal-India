@@ -9,3 +9,4 @@ public interface ApplicationSubmissionAttemptRepository extends JpaRepository<Ap
     List<ApplicationSubmissionAttempt> findBySubmissionIdAndUserIdOrderByCreatedAtAsc(UUID submissionId, UUID userId);
     void deleteByUserId(UUID userId);
 }
+

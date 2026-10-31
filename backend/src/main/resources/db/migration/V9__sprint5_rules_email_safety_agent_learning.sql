@@ -185,3 +185,4 @@ CREATE TABLE skip_reason_feedback (
 );
 
 CREATE INDEX idx_skip_feedback_user_id ON skip_reason_feedback(user_id);
+

@@ -1,0 +1,48 @@
+{
+  "Java": [
+    { "title": "Official Java Tutorials (dev.java)", "url": "https://dev.java/learn/" },
+    { "title": "Java Concurrency & JVM Internals Guide", "url": "https://docs.oracle.com/en/java/javase/17/" }
+  ],
+  "Spring Boot": [
+    { "title": "Spring Boot Reference Documentation", "url": "https://docs.spring.io/spring-boot/index.html" },
+    { "title": "Spring Academy Guides", "url": "https://spring.io/guides" }
+  ],
+  "SQL": [
+    { "title": "PostgreSQL Official Tutorial", "url": "https://www.postgresql.org/docs/current/tutorial.html" },
+    { "title": "Use The Index, Luke (SQL Indexing)", "url": "https://use-the-index-luke.com/" }
+  ],
+  "Microservices": [
+    { "title": "Microservices.io Patterns Catalog", "url": "https://microservices.io/patterns/index.html" },
+    { "title": "Twelve-Factor App Methodology", "url": "https://12factor.net/" }
+  ],
+  "Kafka": [
+    { "title": "Apache Kafka Quickstart & Documentation", "url": "https://kafka.apache.org/documentation/" },
+    { "title": "Event-Driven Architecture Fundamentals", "url": "https://developer.confluent.io/learn-kafka/" }
+  ],
+  "DSA": [
+    { "title": "CP-Algorithms (Data Structures & Algorithms)", "url": "https://cp-algorithms.com/" },
+    { "title": "Tech Interview Handbook — Algorithms", "url": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/" }
+  ],
+  "Docker": [
+    { "title": "Docker Get Started Guide", "url": "https://docs.docker.com/get-started/" }
+  ],
+  "Kubernetes": [
+    { "title": "Kubernetes Basics Official Tutorials", "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/" }
+  ],
+  "AWS": [
+    { "title": "AWS Skill Builder & Architecture Center", "url": "https://aws.amazon.com/architecture/" }
+  ],
+  "React": [
+    { "title": "React Official Documentation (react.dev)", "url": "https://react.dev/learn" }
+  ],
+  "TypeScript": [
+    { "title": "TypeScript Handbook", "url": "https://www.typescriptlang.org/docs/handbook/intro.html" }
+  ],
+  "Python": [
+    { "title": "Official Python Tutorial", "url": "https://docs.python.org/3/tutorial/" }
+  ],
+  "DEFAULT": [
+    { "title": "MDN & Open Source Curriculum Reference", "url": "https://roadmap.sh/" }
+  ]
+}
+

@@ -12,3 +12,4 @@ public interface ConnectedMailboxRepository extends JpaRepository<ConnectedMailb
     Optional<ConnectedMailbox> findFirstByUserIdAndStatusOrderByConnectedAtDesc(UUID userId, String status);
     void deleteByUserId(UUID userId);
 }
+

@@ -10,3 +10,4 @@ public interface NotificationSentLogRepository extends JpaRepository<Notificatio
     List<NotificationSentLog> findByUserIdOrderBySentAtDesc(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

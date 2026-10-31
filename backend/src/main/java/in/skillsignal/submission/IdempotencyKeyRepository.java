@@ -9,3 +9,4 @@ public interface IdempotencyKeyRepository extends JpaRepository<IdempotencyKey, 
     Optional<IdempotencyKey> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
     void deleteByUserId(UUID userId);
 }
+

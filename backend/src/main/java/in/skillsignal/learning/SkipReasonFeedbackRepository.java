@@ -9,3 +9,4 @@ public interface SkipReasonFeedbackRepository extends JpaRepository<SkipReasonFe
     List<SkipReasonFeedback> findByUserIdOrderByCreatedAtDesc(UUID userId);
     void deleteByUserId(UUID userId);
 }
+

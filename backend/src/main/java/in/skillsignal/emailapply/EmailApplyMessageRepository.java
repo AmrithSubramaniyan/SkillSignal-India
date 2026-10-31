@@ -11,3 +11,4 @@ public interface EmailApplyMessageRepository extends JpaRepository<EmailApplyMes
     Optional<EmailApplyMessage> findByIdAndUserId(UUID id, UUID userId);
     void deleteByUserId(UUID userId);
 }
+

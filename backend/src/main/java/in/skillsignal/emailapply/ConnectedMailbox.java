@@ -82,3 +82,4 @@ public class ConnectedMailbox {
         return "ConnectedMailbox{id=" + id + ", provider='" + provider + "', emailAddress='" + emailAddress + "', status='" + status + "'}";
     }
 }
+

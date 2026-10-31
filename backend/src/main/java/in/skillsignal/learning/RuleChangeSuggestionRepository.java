@@ -11,3 +11,4 @@ public interface RuleChangeSuggestionRepository extends JpaRepository<RuleChange
     Optional<RuleChangeSuggestion> findByIdAndUserId(UUID id, UUID userId);
     void deleteByUserId(UUID userId);
 }
+

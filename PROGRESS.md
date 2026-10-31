@@ -47,15 +47,15 @@
 
 ## Sprint 6: Insights, Career, Production (G1-G6, H1-H4) (`sprint6-v1`, `v1.0.0-lite`)
 
-- [ ] **STAGE 30: ANALYTICS (G1-G3)** — Six metrics: applications per week, by status, response rate (formula shown in UI), results by resume version, follow-up completion, discovered vs saved vs applied; sample sizes shown; disclosed salary ranges only; source health table (last success, errors, freshness). Screen `Job-Search Analytics`.
-- [ ] **STAGE 31: CAREER (G4-G6)** — Skill roadmap (weekly plan from missing skills, checkbox progress, learning links from a config file). Interview prep from a job description; topic sets for any field via a topic list (keep Java, Spring Boot, SQL, Microservices, Kafka, DSA sets); behavioural and project questions; text mock interview with rubric feedback; weak-topic list. Never claim a real interview outcome. Screens: `Skill Roadmap`, `Interview Preparation`.
-- [ ] **STAGE 32: BUSINESS + PRODUCTION (H1-H4)** — Feature-flag table for free vs paid (no payments). Docker compose for staging, CI build and tests, health check, daily DB backup script with a TESTED restore, dependency vulnerability scan, rate limits, security headers, secrets from environment, a short security findings report, feedback form, known-issues list, usage events. **GATE G7** reminder.
-- [ ] **STAGE 33: FINAL CLOSE** — Run the complete test suites (backend, frontend build, apply-agent against mock portal). Update `README.md` and docs. Tag `sprint6-v1` and `v1.0.0-lite`.
+- [x] **STAGE 30: ANALYTICS (G1-G3)** — Six metrics: applications per week, by status, response rate (formula shown in UI), results by resume version, follow-up completion, discovered vs saved vs applied; sample sizes shown; disclosed salary ranges only; source health table (last success, errors, freshness). Screen `Job-Search Analytics`.
+- [x] **STAGE 31: CAREER (G4-G6)** — Skill roadmap (weekly plan from missing skills, checkbox progress, learning links from a config file). Interview prep from a job description; topic sets for any field via a topic list (keep Java, Spring Boot, SQL, Microservices, Kafka, DSA sets); behavioural and project questions; text mock interview with rubric feedback; weak-topic list. Never claim a real interview outcome. Screens: `Skill Roadmap`, `Interview Preparation`.
+- [x] **STAGE 32: BUSINESS + PRODUCTION (H1-H4)** — Feature-flag table for free vs paid (no payments). Docker compose for staging, CI build and tests, health check, daily DB backup script with a TESTED restore, dependency vulnerability scan, rate limits, security headers, secrets from environment, a short security findings report, feedback form, known-issues list, usage events. **GATE G7** reminder.
+- [x] **STAGE 33: FINAL CLOSE** — Run the complete test suites (backend, frontend build, apply-agent against mock portal). Update `README.md` and docs. Tag `sprint6-v1` and `v1.0.0-lite`.
 
 ## Current Status
-- **Current Stage**: Stage 30 — Analytics (`G1-G3`)
-- **Last Commit**: Stage 29 (`feat(stage-29): add Learning Loop, Auto-Apply Centre, consent-gated rule suggestions, and skip feedback; tag sprint5-v1`)
-- **Next Step**: Complete Sprint 6 (Stages 30–33) and tag `sprint6-v1` & `v1.0.0-lite`.
+- **Current Stage**: Stage 33 — Final Close (`COMPLETE` — Tagged `sprint6-v1` and `v1.0.0-lite`)
+- **Last Commit**: Stage 33 (`feat(sprint-6): complete Stages 30-33 Analytics, Career Roadmap & Mock Interview, Production Readiness, and Final Close v1.0.0-lite`)
+- **Next Step**: All 33 Stages (Sprints 1–6) complete. Review open compliance gates (`G4`, `G5`, `G6`, `G7`) before public production deployment.
 - **Open GATES**:
   - **GATE G3 (RESOLVED)**: User confirmed building the Greenhouse Public Job Board API read-only GET connector (`Assisted Apply` only) and keeping Naukri, LinkedIn, Indeed, Foundit, Instahyre, and Wellfound disabled.
   - **GATE G4 (OPEN — Stage 25)**: Email-apply OAuth app registration (Google Cloud for Gmail or Microsoft Entra for Outlook).

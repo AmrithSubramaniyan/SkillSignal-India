@@ -1,17 +1,29 @@
 package in.skillsignal.privacy;
 
+import in.skillsignal.agent.ApplyAgentRepository;
+import in.skillsignal.agent.ApplyEvidenceRepository;
+import in.skillsignal.agent.ApplyTaskRepository;
+import in.skillsignal.agent.PortalSettingRepository;
 import in.skillsignal.answer.AnswerLibraryRepository;
 import in.skillsignal.application.ApplicationEventRepository;
 import in.skillsignal.application.ApplicationRepository;
 import in.skillsignal.audit.AuditLog;
 import in.skillsignal.audit.AuditLogRepository;
 import in.skillsignal.audit.AuditService;
+import in.skillsignal.career.InterviewPrepSessionRepository;
+import in.skillsignal.career.SkillRoadmapItemRepository;
 import in.skillsignal.company.CompanyRepository;
 import in.skillsignal.consent.ConsentRecordRepository;
 import in.skillsignal.eligibility.AutoApplyPreferenceRepository;
+import in.skillsignal.emailapply.ConnectedMailboxRepository;
+import in.skillsignal.emailapply.EmailApplyMessageRepository;
 import in.skillsignal.job.JobRepository;
+import in.skillsignal.learning.RuleChangeSuggestionRepository;
+import in.skillsignal.learning.SkipReasonFeedbackRepository;
 import in.skillsignal.match.JobMatchRepository;
 import in.skillsignal.pack.ApplicationPackRepository;
+import in.skillsignal.production.UsageEventRepository;
+import in.skillsignal.production.UserFeedbackRepository;
 import in.skillsignal.profile.CareerProfileRepository;
 import in.skillsignal.reminder.NotificationRepository;
 import in.skillsignal.reminder.NotificationSentLogRepository;
@@ -20,6 +32,10 @@ import in.skillsignal.reminder.UserNotificationPreferenceRepository;
 import in.skillsignal.resume.ResumeRepository;
 import in.skillsignal.resume.ResumeVersionRepository;
 import in.skillsignal.resume.TailoredResumeRepository;
+import in.skillsignal.rule.AutoApplyRuleRepository;
+import in.skillsignal.rule.AutoApplyRunRepository;
+import in.skillsignal.safety.SafetyEventRepository;
+import in.skillsignal.safety.SourceCircuitBreakerRepository;
 import in.skillsignal.search.SavedSearchRepository;
 import in.skillsignal.security.AuthController;
 import in.skillsignal.security.AuthenticatedUser;
@@ -74,6 +90,22 @@ public class PrivacyController {
     private final IdempotencyKeyRepository idempotencyKeyRepository;
     private final ApplicationSubmissionRepository submissionRepository;
     private final ApplicationSubmissionAttemptRepository submissionAttemptRepository;
+    private final AutoApplyRuleRepository autoApplyRuleRepository;
+    private final AutoApplyRunRepository autoApplyRunRepository;
+    private final ConnectedMailboxRepository connectedMailboxRepository;
+    private final EmailApplyMessageRepository emailApplyMessageRepository;
+    private final SafetyEventRepository safetyEventRepository;
+    private final SourceCircuitBreakerRepository circuitBreakerRepository;
+    private final ApplyAgentRepository applyAgentRepository;
+    private final PortalSettingRepository portalSettingRepository;
+    private final ApplyTaskRepository applyTaskRepository;
+    private final ApplyEvidenceRepository applyEvidenceRepository;
+    private final RuleChangeSuggestionRepository ruleChangeSuggestionRepository;
+    private final SkipReasonFeedbackRepository skipReasonFeedbackRepository;
+    private final SkillRoadmapItemRepository skillRoadmapItemRepository;
+    private final InterviewPrepSessionRepository interviewPrepSessionRepository;
+    private final UserFeedbackRepository userFeedbackRepository;
+    private final UsageEventRepository usageEventRepository;
     private final AuditService auditService;
     private final Path uploadRootDir;
 
@@ -101,6 +133,22 @@ public class PrivacyController {
             IdempotencyKeyRepository idempotencyKeyRepository,
             ApplicationSubmissionRepository submissionRepository,
             ApplicationSubmissionAttemptRepository submissionAttemptRepository,
+            AutoApplyRuleRepository autoApplyRuleRepository,
+            AutoApplyRunRepository autoApplyRunRepository,
+            ConnectedMailboxRepository connectedMailboxRepository,
+            EmailApplyMessageRepository emailApplyMessageRepository,
+            SafetyEventRepository safetyEventRepository,
+            SourceCircuitBreakerRepository circuitBreakerRepository,
+            ApplyAgentRepository applyAgentRepository,
+            PortalSettingRepository portalSettingRepository,
+            ApplyTaskRepository applyTaskRepository,
+            ApplyEvidenceRepository applyEvidenceRepository,
+            RuleChangeSuggestionRepository ruleChangeSuggestionRepository,
+            SkipReasonFeedbackRepository skipReasonFeedbackRepository,
+            SkillRoadmapItemRepository skillRoadmapItemRepository,
+            InterviewPrepSessionRepository interviewPrepSessionRepository,
+            UserFeedbackRepository userFeedbackRepository,
+            UsageEventRepository usageEventRepository,
             AuditService auditService,
             @Value("${app.uploads.dir:./uploads}") String uploadDir
     ) {
@@ -127,6 +175,22 @@ public class PrivacyController {
         this.idempotencyKeyRepository = idempotencyKeyRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttemptRepository = submissionAttemptRepository;
+        this.autoApplyRuleRepository = autoApplyRuleRepository;
+        this.autoApplyRunRepository = autoApplyRunRepository;
+        this.connectedMailboxRepository = connectedMailboxRepository;
+        this.emailApplyMessageRepository = emailApplyMessageRepository;
+        this.safetyEventRepository = safetyEventRepository;
+        this.circuitBreakerRepository = circuitBreakerRepository;
+        this.applyAgentRepository = applyAgentRepository;
+        this.portalSettingRepository = portalSettingRepository;
+        this.applyTaskRepository = applyTaskRepository;
+        this.applyEvidenceRepository = applyEvidenceRepository;
+        this.ruleChangeSuggestionRepository = ruleChangeSuggestionRepository;
+        this.skipReasonFeedbackRepository = skipReasonFeedbackRepository;
+        this.skillRoadmapItemRepository = skillRoadmapItemRepository;
+        this.interviewPrepSessionRepository = interviewPrepSessionRepository;
+        this.userFeedbackRepository = userFeedbackRepository;
+        this.usageEventRepository = usageEventRepository;
         this.auditService = auditService;
         this.uploadRootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
@@ -169,6 +233,19 @@ public class PrivacyController {
         export.put("answerLibrary", answerLibraryRepository.findByUserIdOrderByUpdatedAtDesc(user.getId()));
         export.put("autoApplyPreferences", autoApplyPreferenceRepository.findById(user.getId()).orElse(null));
         export.put("submissions", submissionRepository.findByUserIdOrderByUpdatedAtDesc(user.getId()));
+        export.put("autoApplyRules", autoApplyRuleRepository.findByUserIdOrderByPriorityOrderAscCreatedAtAsc(user.getId()));
+        export.put("autoApplyRuns", autoApplyRunRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("emailApplyMessages", emailApplyMessageRepository.findByUserIdOrderByUpdatedAtDesc(user.getId()));
+        export.put("safetyEvents", safetyEventRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("portalSettings", portalSettingRepository.findByUserIdOrderByPortalAsc(user.getId()));
+        export.put("applyTasks", applyTaskRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("applyEvidence", applyEvidenceRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("ruleChangeSuggestions", ruleChangeSuggestionRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("skipReasonFeedbacks", skipReasonFeedbackRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("skillRoadmapItems", skillRoadmapItemRepository.findByUserIdOrderByWeekNumberAscSkillNameAsc(user.getId()));
+        export.put("interviewPrepSessions", interviewPrepSessionRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("userFeedback", userFeedbackRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
+        export.put("usageEvents", usageEventRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         export.put("auditLogs", auditLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId()));
         return export;
     }
@@ -197,6 +274,22 @@ public class PrivacyController {
         }
 
         // 2. Delete all user records
+        usageEventRepository.deleteByUserId(user.getId());
+        userFeedbackRepository.deleteByUserId(user.getId());
+        interviewPrepSessionRepository.deleteByUserId(user.getId());
+        skillRoadmapItemRepository.deleteByUserId(user.getId());
+        skipReasonFeedbackRepository.deleteByUserId(user.getId());
+        ruleChangeSuggestionRepository.deleteByUserId(user.getId());
+        applyEvidenceRepository.deleteByUserId(user.getId());
+        applyTaskRepository.deleteByUserId(user.getId());
+        portalSettingRepository.deleteByUserId(user.getId());
+        applyAgentRepository.deleteByUserId(user.getId());
+        circuitBreakerRepository.deleteByUserId(user.getId());
+        safetyEventRepository.deleteByUserId(user.getId());
+        emailApplyMessageRepository.deleteByUserId(user.getId());
+        connectedMailboxRepository.deleteByUserId(user.getId());
+        autoApplyRunRepository.deleteByUserId(user.getId());
+        autoApplyRuleRepository.deleteByUserId(user.getId());
         submissionAttemptRepository.deleteByUserId(user.getId());
         submissionRepository.deleteByUserId(user.getId());
         idempotencyKeyRepository.deleteByUserId(user.getId());
@@ -224,4 +317,3 @@ public class PrivacyController {
         return ResponseEntity.ok(Map.of("message", "Account, records, and uploaded files have been permanently erased."));
     }
 }
-

@@ -227,3 +227,4 @@ class Stage15RemindersAndNotificationsTest {
                 .andExpect(jsonPath("$.status").value("APPLIED"));
     }
 }
+
