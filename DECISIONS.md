@@ -89,3 +89,12 @@
 2. **Parallel Multi-Source Search Orchestrator (`JobSearchOrchestrator`)**:
    - Executes enabled sources in parallel via `CompletableFuture.supplyAsync(...).orTimeout(timeoutMs, MILLISECONDS)`.
    - Never fails the overall search when an individual source times out, throws an error, or is disabled in `source_capabilities`; instead records per-source timing and status in `sourcesSearched` and `sourcesFailed` alongside `coverageDisclaimer`.
+
+## Stage 11: Duplicate Merging, Stale Verification, Saved Jobs & Saved Searches
+1. **Fuzzy Duplicate Merging (`JobDedupAndStaleService`)**:
+   - Computes `dedupKey` from normalized company (stripping Pvt Ltd/India/Technologies), normalized fuzzy title (`Sr.` -> `senior`, `Dev` -> `developer`, `SDE` -> `softwaredevelopmentengineer`, stripping level numerals/parentheses), and normalized city alias (`Bangalore` -> `bengaluru`).
+   - Merges duplicates into the existing user `Job` while appending every source entry (`source`, `externalId`, `url`, `titleVariant`, `observedAt`) to `source_records_json` and enriching missing salary/education/skills fields.
+2. **Stale Flag Only on Reliable Evidence**:
+   - `verifyJobStaleness` sets `is_stale = true` ONLY when `explicitClosedFlag == true` or `observedHttpStatus` is `404`/`410`. Transient `500`/`429` errors or older posting dates never mark a job stale.
+3. **Saved Searches with Scheduled Daily Refresh (`V5__saved_searches.sql`)**:
+   - `SavedSearchService.runScheduledDailyRefresh()` runs via `@Scheduled(cron = "${app.search.daily-refresh-cron:0 0 6 * * *}")` across all active saved searches and updates `last_refreshed_at` and `last_match_count`.

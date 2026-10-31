@@ -14,6 +14,7 @@ import {
   Alert,
   List,
   Badge,
+  Divider,
   message,
 } from 'antd'
 import {
@@ -23,6 +24,11 @@ import {
   WarningOutlined,
   EnvironmentOutlined,
   DollarOutlined,
+  StarOutlined,
+  StarFilled,
+  BookOutlined,
+  SyncOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { apiClient as api } from '../api/client'
@@ -96,6 +102,16 @@ export interface JobSearchResponse {
   coverageDisclaimer: string
 }
 
+export interface SavedSearchDto {
+  id: string
+  name: string
+  rawQuery: string | null
+  filters: JobSearchFilters
+  dailyRefreshEnabled: boolean
+  lastRefreshedAt: string | null
+  lastMatchCount: number
+}
+
 const EMPTY_FILTERS: JobSearchFilters = {
   rawQuery: '',
   keywords: [],
@@ -113,7 +129,17 @@ export default function JobSearchPage() {
   const [filters, setFilters] = useState<JobSearchFilters>(EMPTY_FILTERS)
   const [chips, setChips] = useState<FilterChip[]>([])
   const [searchResult, setSearchResult] = useState<JobSearchResponse | null>(null)
+  const [savedSearches, setSavedSearches] = useState<SavedSearchDto[]>([])
   const [loading, setLoading] = useState(false)
+
+  const fetchSavedSearches = async () => {
+    try {
+      const res = await api.get<SavedSearchDto[]>('/saved-searches')
+      setSavedSearches(res.data)
+    } catch {
+      // ignore
+    }
+  }
 
   const handleParseAndSearch = async () => {
     setLoading(true)
@@ -161,6 +187,50 @@ export default function JobSearchPage() {
     }
   }
 
+  const handleSaveCurrentSearch = async () => {
+    try {
+      await api.post('/saved-searches', {
+        name: queryText.trim() ? queryText.slice(0, 60) : 'Custom Filter Search',
+        rawQuery: queryText,
+        filters,
+        dailyRefreshEnabled: true,
+      })
+      message.success('Saved search with daily scheduled refresh enabled')
+      fetchSavedSearches()
+    } catch {
+      message.error('Failed to save search')
+    }
+  }
+
+  const handleRefreshSavedSearch = async (id: string) => {
+    try {
+      const res = await api.post<SavedSearchDto>(`/saved-searches/${id}/refresh`)
+      message.success(`Refreshed "${res.data.name}" (${res.data.lastMatchCount} matches)`)
+      fetchSavedSearches()
+      runWithFilters(res.data.filters)
+    } catch {
+      message.error('Failed to refresh saved search')
+    }
+  }
+
+  const handleDeleteSavedSearch = async (id: string) => {
+    try {
+      await api.delete(`/saved-searches/${id}`)
+      fetchSavedSearches()
+    } catch {
+      message.error('Failed to delete saved search')
+    }
+  }
+
+  const handleToggleSaveJob = async (job: JobSearchResultItem) => {
+    try {
+      await api.put(`/jobs/${job.id}/save`, { saved: !job.saved })
+      runWithFilters(filters)
+    } catch {
+      message.error('Failed to update saved job state')
+    }
+  }
+
   const handleRemoveChip = (chip: FilterChip) => {
     const next = { ...filters }
     if (chip.key === 'keywords') next.keywords = next.keywords.filter((k) => k !== chip.value)
@@ -185,6 +255,7 @@ export default function JobSearchPage() {
 
   useEffect(() => {
     runWithFilters(EMPTY_FILTERS)
+    fetchSavedSearches()
   }, [])
 
   return (
@@ -198,10 +269,43 @@ export default function JobSearchPage() {
             Type a natural-language job query to extract editable filter chips, then search across enabled sources in parallel.
           </Paragraph>
         </div>
-        <Link to="/sources">
-          <Button>Connected Sources & Permissions</Button>
-        </Link>
+        <Space>
+          <Button icon={<BookOutlined />} onClick={handleSaveCurrentSearch}>
+            Save Search (Daily Refresh)
+          </Button>
+          <Link to="/sources">
+            <Button>Connected Sources & Permissions</Button>
+          </Link>
+        </Space>
       </div>
+
+      {savedSearches.length > 0 && (
+        <Card size="small" style={{ marginBottom: 16 }} title="Saved Searches (Daily Scheduled Refresh)">
+          <Space wrap>
+            {savedSearches.map((ss) => (
+              <Tag key={ss.id} color="geekblue" style={{ padding: '4px 8px' }}>
+                <Space size={6}>
+                  <Text strong>{ss.name}</Text>
+                  <Badge count={ss.lastMatchCount} showZero color="blue" />
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<SyncOutlined />}
+                    onClick={() => handleRefreshSavedSearch(ss.id)}
+                  />
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleDeleteSavedSearch(ss.id)}
+                  />
+                </Space>
+              </Tag>
+            ))}
+          </Space>
+        </Card>
+      )}
 
       <Card style={{ marginBottom: 16 }}>
         <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
@@ -251,6 +355,8 @@ export default function JobSearchPage() {
             </Space>
           )}
         </div>
+
+        <Divider style={{ margin: '12px 0' }} />
 
         <Row gutter={[12, 12]}>
           <Col xs={24} sm={6}>
@@ -302,7 +408,7 @@ export default function JobSearchPage() {
             />
           </Col>
           <Col xs={24} sm={6}>
-            <Text type="secondary">Applied / Saved</Text>
+            <Text type="secondary">Saved Filter</Text>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
               <Switch
                 size="small"
@@ -378,14 +484,21 @@ export default function JobSearchPage() {
                 </div>
                 <div style={{ marginTop: 6 }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Sources:{' '}
+                    Merged Sources ({job.sourceRecords?.length || 1}):{' '}
                     {job.sourceRecords && job.sourceRecords.length > 0
-                      ? job.sourceRecords.map((r) => r.source).join(', ')
+                      ? job.sourceRecords.map((r) => r.source).join(' + ')
                       : job.source}
                   </Text>
                 </div>
               </div>
               <Space>
+                <Button
+                  size="small"
+                  icon={job.saved ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+                  onClick={() => handleToggleSaveJob(job)}
+                >
+                  {job.saved ? 'Saved' : 'Save'}
+                </Button>
                 <Link to="/jobs">
                   <Button size="small" type="primary">
                     Match & Compare
