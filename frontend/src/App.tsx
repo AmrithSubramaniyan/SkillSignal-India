@@ -1,8 +1,18 @@
 import React, { useEffect, useState } from 'react'
-import { Card, Typography, Tag, Spin, Alert, Space } from 'antd'
-import { CheckCircleOutlined, DatabaseOutlined } from '@ant-design/icons'
-import axios from 'axios'
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import { Layout, Menu, Card, Typography, Tag, Spin, Alert, Space, Button } from 'antd'
+import {
+  CheckCircleOutlined,
+  DatabaseOutlined,
+  LogoutOutlined,
+  DashboardOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { apiClient } from './api/client'
+import LoginPage from './pages/LoginPage'
 
+const { Header, Content } = Layout
 const { Title, Paragraph, Text } = Typography
 
 interface HealthResponse {
@@ -11,32 +21,48 @@ interface HealthResponse {
   dbTime: string
 }
 
-export default function App() {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: 120 }}>
+        <Spin size="large" tip="Verifying session..." />
+      </div>
+    )
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+  return <>{children}</>
+}
+
+function HomeStatusView() {
+  const { user } = useAuth()
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    axios
-      .get<HealthResponse>('/api/health')
+    apiClient
+      .get<HealthResponse>('/health')
       .then((res) => {
         setHealth(res.data)
         setLoading(false)
       })
       .catch((err) => {
-        setError(err?.response?.data?.error || err.message || 'Unable to reach backend /api/health')
+        setError(err?.response?.data?.error || err.message || 'Unable to reach /api/health')
         setLoading(false)
       })
   }, [])
 
   return (
-    <div style={{ maxWidth: 720, margin: '64px auto', padding: '0 24px' }}>
+    <div style={{ maxWidth: 840, margin: '32px auto', padding: '0 24px' }}>
       <Card>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Title level={2} style={{ margin: 0 }}>
-            SkillSignal India
+          <Title level={3} style={{ margin: 0 }}>
+            Welcome, {user?.fullName || 'Job Seeker'}
           </Title>
-          <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+          <Paragraph type="secondary" style={{ marginBottom: 4 }}>
             Search once. Find relevant jobs. Apply smarter. Track every application. Follow up on time.
           </Paragraph>
 
@@ -44,7 +70,7 @@ export default function App() {
             {loading && <Spin tip="Checking backend and database..." />}
             {error && <Alert type="error" showIcon message="Backend Unreachable" description={error} />}
             {health && (
-              <Space direction="vertical">
+              <Space wrap size="large">
                 <div>
                   <Text strong>Backend Status: </Text>
                   <Tag icon={<CheckCircleOutlined />} color="success">
@@ -66,3 +92,83 @@ export default function App() {
   )
 }
 
+function AppShell() {
+  const { user, logout } = useAuth()
+  const location = useLocation()
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: '#001529',
+          padding: '0 24px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <Link to="/" style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
+            SkillSignal India
+          </Link>
+          {user && (
+            <Menu
+              theme="dark"
+              mode="horizontal"
+              selectedKeys={[location.pathname]}
+              items={[
+                {
+                  key: '/',
+                  icon: <DashboardOutlined />,
+                  label: <Link to="/">Dashboard</Link>,
+                },
+              ]}
+            />
+          )}
+        </div>
+        <div>
+          {user ? (
+            <Space>
+              <Tag icon={<UserOutlined />} color="blue">
+                {user.email} ({user.role})
+              </Tag>
+              <Button size="small" icon={<LogoutOutlined />} onClick={() => logout()}>
+                Sign Out
+              </Button>
+            </Space>
+          ) : (
+            <Link to="/login">
+              <Button type="primary" size="small">
+                Sign In
+              </Button>
+            </Link>
+          )}
+        </div>
+      </Header>
+      <Content>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <HomeStatusView />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Content>
+    </Layout>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}

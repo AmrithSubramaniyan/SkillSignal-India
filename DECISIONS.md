@@ -21,3 +21,12 @@
    - `V3__applications_events_skills.sql`: `applications` (with `UNIQUE (user_id, job_id)` and indexes on `(user_id)`, `(user_id, status)`, `(user_id, follow_up_date)`), `application_events`, and `skills`.
 2. **Cross-Industry Skills Seed (`seed/skills.json`)**:
    - Seeded 305 skills across Software, Data & AI, Healthcare, Finance, Sales & Marketing, Teaching & Education, Design & Creative, Logistics & Operations, Core Engineering, and Legal & HR, including canonical names and common aliases.
+
+## Stage 3: Authentication, Rate Limiting & Password Reset
+1. **Stateless JWT + Revocation Timestamp**:
+   - Tokens are signed with HMAC-SHA256 (`jjwt` 0.12.6) and expire after 24 hours.
+   - `users.token_revoked_before` enables immediate server-side token invalidation on `/api/auth/logout` and `/api/auth/reset-password` without storing raw tokens.
+2. **Sliding-Window Login Rate Limiter**:
+   - `LoginRateLimiter` tracks login attempts per IP+email window (`AUTH_RATE_LIMIT_MAX_ATTEMPTS`, `AUTH_RATE_LIMIT_WINDOW_SECONDS`) and rejects brute-force bursts with HTTP 429.
+3. **Mail Abstraction (`MailSenderService`)**:
+   - `ConsoleMailSenderService` implements `MailSenderService` for local/dev without logging raw reset tokens in plain text.
