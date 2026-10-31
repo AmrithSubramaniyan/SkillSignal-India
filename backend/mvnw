@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+if [ -d "C:/Users/God/.jdks/jdk-17.0.20.1+1" ]; then
+  export JAVA_HOME="C:/Users/God/.jdks/jdk-17.0.20.1+1"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+exec mvn "$@"
+

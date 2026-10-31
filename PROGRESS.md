@@ -3,7 +3,7 @@
 ## Sprint 1: Foundation + POC Core
 
 - [x] **STAGE 0: ENVIRONMENT** — Detect OS & tools, install JDK 17 (user-space Eclipse Temurin 17), configure H2 (PostgreSQL mode) fallback since Docker/PostgreSQL 16 are unavailable locally, initialize Git, create `.gitignore`, `docs/MASTER_PROMPT.md`, `PROGRESS.md`, `DECISIONS.md`.
-- [ ] **STAGE 1: SKELETON** — `backend/`, `frontend/`, `apply-agent/`, `docker-compose.yml`, `.env.example`, `README.md`, `scripts/`, `GET /api/health` + React home page status display.
+- [x] **STAGE 1: SKELETON** — `backend/`, `frontend/`, `apply-agent/`, `docker-compose.yml`, `.env.example`, `README.md`, `scripts/`, `GET /api/health` + React home page status display.
 - [ ] **STAGE 2: DATABASE V1-V3** — Flyway migrations V1-V3 (`users`, `career_profiles`, `resumes`, `resume_versions`, `jobs`, `job_matches`, `applications`, `application_events`, `consent_records`, `audit_logs`, `skills`) + ~300 cross-industry skills seed JSON.
 - [ ] **STAGE 3: AUTH (A1, A6)** — Register, login, `GET /api/me`, BCrypt, 24h JWT, logout, password reset (console mail in dev), rate limiting, roles `USER`/`ADMIN`, frontend auth flow & protected routes, integration tests.
 - [ ] **STAGE 4: PROFILE, CONSENT, PRIVACY (A2-A5)** — Career profile API & form, versioned/revocable consents, audit logs, `GET /api/privacy/export`, `DELETE /api/privacy/account` (records + files), frontend screens.
@@ -13,7 +13,7 @@
 - [ ] **STAGE 8: SPRINT 1 CLOSE** — UI polish, security review & headers, OpenAPI (`/swagger-ui.html`), comprehensive `README.md`, GitHub Actions CI workflow, full test suite + frontend production build, tag `sprint1-v1`.
 
 ## Current Status
-- **Current Stage**: Stage 0 completed, moving to Stage 1
-- **Last Commit**: *(pending initial Stage 0 commit)*
-- **Next Step**: Stage 1 — Skeleton (`backend/`, `frontend/`, `apply-agent/`, `docker-compose.yml`, `.env.example`, `scripts/`, `/api/health`)
-- **Open GATES**: None blocking Sprint 1 (AI stays in `mock` mode by default per working method; H2 dev fallback used because Docker and local PostgreSQL 16 are not installed).
+- **Current Stage**: Stage 1 completed, moving to Stage 2
+- **Last Commit**: `10e735f` (Stage 0); committing Stage 1 next
+- **Next Step**: Stage 2 — Database Flyway migrations V1–V3 and ~300 cross-industry skills JSON seed
+- **Open GATES**: None blocking Sprint 1
