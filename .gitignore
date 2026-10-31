@@ -1,0 +1,29 @@
+# Dependencies & Build Outputs
+node_modules/
+target/
+dist/
+build/
+
+# Runtime & User Data
+uploads/
+*.db
+*.mv.db
+*.trace.db
+logs/
+*.log
+*.pid
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db
