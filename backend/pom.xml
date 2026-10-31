@@ -106,7 +106,7 @@
             <version>${poi.version}</version>
         </dependency>
 
-        <!-- Apache Kafka (Spring Kafka) -->
+        <!-- Sprint 7: Apache Kafka (Spring Kafka & EmbeddedKafka Test Support) -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
