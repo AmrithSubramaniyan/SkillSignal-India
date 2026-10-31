@@ -10,11 +10,31 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers:localhost:19092}
+    admin:
+      fail-fast: false
+      auto-create: false
+    consumer:
+      group-id: skillsignal-session-summary
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+      auto-startup: false
 
 app:
   uploads:
     dir: ./target/test-uploads
   ai:
     provider: mock
+  session:
+    idle-timeout-minutes: 15
+    beacon-grace-seconds: 30
+    checkout-grace-ms: 50
+    max-summary-emails-per-day: 20
+    max-email-rows: 50
+    outbox-relay-interval-ms: 2000
+    outbox-retention-days: 7
   seed-demo: false
-

@@ -24,6 +24,25 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    admin:
+      fail-fast: false
+      auto-create: true
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:skillsignal-session-summary}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
@@ -46,6 +65,14 @@ app:
       nice-to-have-skills: ${MATCH_WEIGHT_NICE_TO_HAVE:10}
       experience: ${MATCH_WEIGHT_EXPERIENCE:20}
       location: ${MATCH_WEIGHT_LOCATION:10}
+  session:
+    idle-timeout-minutes: ${SESSION_IDLE_TIMEOUT_MINUTES:15}
+    beacon-grace-seconds: ${SESSION_BEACON_GRACE_SECONDS:30}
+    checkout-grace-ms: ${SESSION_CHECKOUT_GRACE_MS:30000}
+    max-summary-emails-per-day: ${SESSION_MAX_SUMMARY_EMAILS_PER_DAY:20}
+    max-email-rows: ${SESSION_MAX_EMAIL_ROWS:50}
+    outbox-relay-interval-ms: ${OUTBOX_RELAY_INTERVAL_MS:3000}
+    outbox-retention-days: ${OUTBOX_RETENTION_DAYS:7}
   seed-demo: ${APP_SEED_DEMO:false}
 
 springdoc:
@@ -59,4 +86,6 @@ management:
     web:
       exposure:
         include: health,info
-
+  endpoint:
+    health:
+      show-details: always

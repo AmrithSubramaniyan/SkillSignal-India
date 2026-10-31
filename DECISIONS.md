@@ -247,6 +247,13 @@
 3. **Production Readiness, Tested Backup/Restore & Compliance (`ProductionAndBusinessController`, `docs/SECURITY_REPORT.md`)**:
    - Seeds the Free vs Paid `feature_flags` comparison table (`paymentsEnabled = false`), user feedback form, usage events, known-issues list, `docker-compose.staging.yml`, tested `scripts/backup-db.ps1` and `scripts/restore-db.ps1`, and **GATE G7** legal review reminder.
 
+## Sprint 7: Session Check-out Email with Apache Kafka (`sprint7-v1`)
+1. **Stage S7-1 — Single-Node Apache Kafka 3.8.0 (KRaft Mode) & Non-Blocking Outbox Resilience**:
+   - Pinned `apache/kafka:3.8.0` in KRaft mode (no ZooKeeper) on the internal Docker network (`skillsignal_internal`, never exposed to host ports), capped at `-Xmx512M -Xms256M` JVM heap and `900m` container memory limit (well below the 1.5 GB threshold in Gate S7-G2) with 7-day log retention (`168` hours).
+   - Configured `NewTopic` beans (`application.applied`, `session.checked-out`, `session.summary-email.requested`, and `*.DLT` dead-letter topics) with 3 partitions and replication factor 1, keyed by `userId.toString()` for strict per-user ordering.
+   - Configured `spring.kafka.admin.fail-fast: false` and `missing-topics-fatal: false` so login and job applications continue to work 100% normally if the Kafka broker is unreachable, buffering events in `outbox_events`.
+
+
 
 
 

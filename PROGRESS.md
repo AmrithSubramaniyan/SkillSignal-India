@@ -52,10 +52,20 @@
 - [x] **STAGE 32: BUSINESS + PRODUCTION (H1-H4)** — Feature-flag table for free vs paid (no payments). Docker compose for staging, CI build and tests, health check, daily DB backup script with a TESTED restore, dependency vulnerability scan, rate limits, security headers, secrets from environment, a short security findings report, feedback form, known-issues list, usage events. **GATE G7** reminder.
 - [x] **STAGE 33: FINAL CLOSE** — Run the complete test suites (backend, frontend build, apply-agent against mock portal). Update `README.md` and docs. Tag `sprint6-v1` and `v1.0.0-lite`.
 
+## Sprint 7: Session Check-out Email with Apache Kafka (`sprint7-v1`)
+
+- [x] **STAGE S7-1: KAFKA INFRASTRUCTURE** — Single-node Apache Kafka (`apache/kafka:3.8.0` KRaft mode, internal network only, named volume, healthcheck, 512M heap, 900M mem limit, 7-day retention) in `docker-compose.yml` & `docker-compose.staging.yml` + optional `axllent/mailpit:v1.21.5` in `dev` profile; `spring-kafka` & `spring-kafka-test`/`testcontainers:kafka`; `NewTopic` beans (`application.applied`, `session.checked-out`, `session.summary-email.requested`, and `*.DLT` dead-letter topics, 3 partitions, replication 1, keyed by `userId`); `SkillSignalEventEnvelope` (`schemaVersion: 1`) documented in `docs/events.md`; Kafka health indicator & outbox degradation resilience.
+- [ ] **STAGE S7-2: SESSIONS (CHECK-IN / CHECK-OUT)** — `user_sessions` migration, check-in on login, 60s heartbeat (`POST /api/sessions/{id}/heartbeat`), explicit check-out (`POST /api/sessions/{id}/checkout`), beacon check-out (`POST /api/sessions/{id}/checkout-beacon`) with session-bound token & 30s reload grace period, 15m idle timeout scheduler, idempotent & ownership-enforced check-out, frontend session heartbeat/beacon/logout & recent sessions table.
+- [ ] **STAGE S7-3: OUTBOX AND PRODUCERS (NO LOST EVENTS)** — `outbox_events` migration, same-transaction `application.applied` events on qualifying statuses (`APPLIED`, `SENT`, `SUBMITTED_CONFIRMED`), row-locked (`FOR UPDATE SKIP LOCKED`) outbox relay to Kafka with retry & 7-day cleanup, `"while you were away"` handling (`sessionId = null`).
+- [ ] **STAGE S7-4: CONSUMER AND SESSION SUMMARY** — `session_applied_items` idempotent consumer (`application_id UNIQUE`, `event_id UNIQUE`), `session.checked-out` consumer with configurable grace period, `SKIPPED_NO_APPLICATIONS` (0 applications -> no email), `SKIPPED_USER_OPTOUT`, 3-attempt exponential backoff + `.DLT` routing, ordering edge cases.
+- [ ] **STAGE S7-5: EMAIL** — `session.summary-email.requested` consumer, `session_summary_emails` (`session_id UNIQUE`), HTML + plain-text email with IST time zone, truthful status labels (`User confirmed`, `Externally confirmed`, `Sent, not yet confirmed`), HTML escaping (`<script>` safe), 50-row truncation (`"and N more"`), 20/day rate limit, `session_summary_email_enabled` consent & signed single-purpose unsubscribe link.
+- [ ] **STAGE S7-6: TESTS** — Full integration test suite covering all 14 scenarios with real output.
+- [ ] **STAGE S7-7: DOCKER AND DOCS** — `.env.example`, `.env.local.example`, `.env.prod.example`, `README.md`, `docs/events.md`, `RUNBOOK.md`, tag `sprint7-v1`.
+
 ## Current Status
-- **Current Stage**: Stage 33 — Final Close (`COMPLETE` — Tagged `sprint6-v1` and `v1.0.0-lite`)
-- **Last Commit**: Stage 33 (`feat(sprint-6): complete Stages 30-33 Analytics, Career Roadmap & Mock Interview, Production Readiness, and Final Close v1.0.0-lite`)
-- **Next Step**: All 33 Stages (Sprints 1–6) complete. Review open compliance gates (`G4`, `G5`, `G6`, `G7`) before public production deployment.
+- **Current Stage**: Stage S7-2 — Sessions (Check-in / Check-out) (`IN PROGRESS`)
+- **Last Commit**: Stage S7-1 (`feat(stage-s7-1): add Apache Kafka 3.8.0 KRaft config, topics, DLT error handler, health indicator, and docs/events.md`)
+- **Next Step**: Complete Stage S7-2 (`user_sessions` migration, check-in, heartbeat, checkout, beacon grace period, idle timeout, and frontend integration).
 - **Open GATES**:
   - **GATE G3 (RESOLVED)**: User confirmed building the Greenhouse Public Job Board API read-only GET connector (`Assisted Apply` only) and keeping Naukri, LinkedIn, Indeed, Foundit, Instahyre, and Wellfound disabled.
   - **GATE G4 (OPEN — Stage 25)**: Email-apply OAuth app registration (Google Cloud for Gmail or Microsoft Entra for Outlook).

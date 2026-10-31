@@ -13,12 +13,62 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - skillsignal_internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skill} -d ${POSTGRES_DB:-skillsignal}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: skillsignal-kafka
+    restart: unless-stopped
+    mem_limit: 900m
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    # Golden Rule: Kafka is NEVER published to the host; only backend uses it on skillsignal_internal
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - skillsignal_internal
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  mailpit:
+    image: axllent/mailpit:v1.21.5
+    container_name: skillsignal-mailpit
+    restart: unless-stopped
+    profiles:
+      - dev
+    ports:
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+    networks:
+      - skillsignal_internal
+
+networks:
+  skillsignal_internal:
+    driver: bridge
+
 volumes:
   postgres_data:
-
+  kafka_data:
