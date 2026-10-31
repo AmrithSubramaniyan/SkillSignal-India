@@ -95,6 +95,47 @@ interface EligibilityResult {
   whyAppliedOrSkipped: string
 }
 
+interface RuleCondition {
+  field: string
+  operator: string
+  value: string
+}
+
+interface AutoApplyRuleItem {
+  id: string
+  ruleName: string
+  priorityOrder: number
+  enabled: boolean
+  conditions: RuleCondition[]
+  tierT1Policy: string
+  tierT2Policy: string
+  tierT3Policy: string
+  timeWindowStart: string
+  timeWindowEnd: string
+  companyCooldownDays: number
+  minSpreadMinutes: number
+}
+
+interface DryRunResult {
+  id: string
+  dryRun: boolean
+  totalJobsEvaluated: number
+  matchedJobsCount: number
+  submissionsCreatedCount: number
+  summaryText: string
+  items: Array<{
+    jobId: string
+    jobTitle: string
+    company: string
+    companyTier: string
+    matchedRuleName?: string
+    wouldMatch: boolean
+    routingOutcome: string
+    scheduledSpreadOffsetMinutes: number
+    explanation: string
+  }>
+}
+
 export default function AutoApplySettingsPage() {
   const [prefs, setPrefs] = useState<AutoApplyPreferences | null>(null)
   const [answers, setAnswers] = useState<AnswerLibraryItem[]>([])
@@ -107,20 +148,26 @@ export default function AutoApplySettingsPage() {
   const [stopConfirmText, setStopConfirmText] = useState('')
 
   const [answerModalOpen, setAnswerModalOpen] = useState(false)
+  const [rulesList, setRulesList] = useState<AutoApplyRuleItem[]>([])
+  const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null)
+  const [ruleModalOpen, setRuleModalOpen] = useState(false)
   const [prefForm] = Form.useForm()
   const [answerForm] = Form.useForm()
+  const [ruleForm] = Form.useForm()
 
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [prefRes, ansRes, jobRes] = await Promise.all([
+      const [prefRes, ansRes, jobRes, rulesRes] = await Promise.all([
         apiClient.get<AutoApplyPreferences>('/auto-apply/preferences'),
         apiClient.get<AnswerLibraryItem[]>('/answers'),
         apiClient.get<JobItem[]>('/jobs'),
+        apiClient.get<AutoApplyRuleItem[]>('/auto-apply/rules'),
       ])
       setPrefs(prefRes.data)
       setAnswers(ansRes.data)
       setJobs(jobRes.data)
+      setRulesList(rulesRes.data)
 
       const p = prefRes.data
       prefForm.setFieldsValue({
@@ -233,6 +280,57 @@ export default function AutoApplySettingsPage() {
       setEvalResult(res.data)
     } catch {
       message.error('Could not evaluate job eligibility')
+    }
+  }
+
+  const handleCreateRule = async (values: any) => {
+    const conditions: RuleCondition[] = []
+    if (values.cond1Field && values.cond1Value) {
+      conditions.push({ field: values.cond1Field, operator: values.cond1Op || 'CONTAINS', value: values.cond1Value })
+    }
+    if (values.cond2Field && values.cond2Value) {
+      conditions.push({ field: values.cond2Field, operator: values.cond2Op || 'CONTAINS', value: values.cond2Value })
+    }
+    try {
+      await apiClient.post('/auto-apply/rules', {
+        ruleName: values.ruleName,
+        priorityOrder: values.priorityOrder || rulesList.length + 1,
+        enabled: true,
+        conditions,
+        tierT1Policy: 'REVIEW',
+        tierT2Policy: values.tierT2Policy || 'ELIGIBLE',
+        tierT3Policy: values.tierT3Policy || 'ELIGIBLE',
+        timeWindowStart: values.timeWindowStart || '09:00',
+        timeWindowEnd: values.timeWindowEnd || '19:00',
+        companyCooldownDays: values.companyCooldownDays ?? 30,
+        minSpreadMinutes: values.minSpreadMinutes ?? 15,
+      })
+      message.success('Created Auto-Apply Rule')
+      setRuleModalOpen(false)
+      ruleForm.resetFields()
+      loadAll()
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.response?.data?.error || 'Failed to create rule')
+    }
+  }
+
+  const handleDeleteRule = async (id: string) => {
+    try {
+      await apiClient.delete(`/auto-apply/rules/${id}`)
+      message.success('Rule deleted')
+      loadAll()
+    } catch {
+      message.error('Failed to delete rule')
+    }
+  }
+
+  const handleRunDryRun = async () => {
+    try {
+      const res = await apiClient.post<DryRunResult>('/auto-apply/runs?dry_run=true', {})
+      setDryRunResult(res.data)
+      message.success(`Dry Run complete: ${res.data.summaryText} (0 submissions created)`)
+    } catch {
+      message.error('Failed to execute Dry Run')
     }
   }
 
@@ -566,9 +664,184 @@ export default function AutoApplySettingsPage() {
                 </div>
               ),
             },
+            {
+              key: 'dryrun',
+              label: `Ordered Rules (${rulesList.length}/5) & Dry Run`,
+              children: (
+                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text type="secondary">
+                      Up to 5 ordered rules per user, up to 3 conditions each. T1 companies always route to Review. Cooldown: 1 application per company per 30 days. Dry run creates ZERO submissions.
+                    </Text>
+                    <Space>
+                      <Button
+                        icon={<PlusOutlined />}
+                        disabled={rulesList.length >= 5}
+                        onClick={() => setRuleModalOpen(true)}
+                      >
+                        Add Rule ({rulesList.length}/5)
+                      </Button>
+                      <Button type="primary" onClick={handleRunDryRun}>
+                        Run Dry Run (0 Submissions)
+                      </Button>
+                    </Space>
+                  </div>
+
+                  <Table
+                    rowKey="id"
+                    size="small"
+                    dataSource={rulesList}
+                    columns={[
+                      { title: 'Order', dataIndex: 'priorityOrder', key: 'priorityOrder', width: 70 },
+                      { title: 'Rule Name', dataIndex: 'ruleName', key: 'ruleName' },
+                      {
+                        title: 'Conditions (Max 3)',
+                        key: 'conditions',
+                        render: (_: unknown, r: AutoApplyRuleItem) =>
+                          r.conditions.length === 0 ? (
+                            <Tag>All Jobs</Tag>
+                          ) : (
+                            r.conditions.map((c, idx) => (
+                              <Tag key={idx} color="blue">
+                                {c.field} {c.operator} {c.value}
+                              </Tag>
+                            ))
+                          ),
+                      },
+                      {
+                        title: 'Tier Policy',
+                        key: 'tiers',
+                        render: (_: unknown, r: AutoApplyRuleItem) => (
+                          <Space size={4}>
+                            <Tag color="gold">T1={r.tierT1Policy}</Tag>
+                            <Tag color="green">T2={r.tierT2Policy}</Tag>
+                            <Tag color="cyan">T3={r.tierT3Policy}</Tag>
+                          </Space>
+                        ),
+                      },
+                      {
+                        title: 'Window / Cooldown / Spread',
+                        key: 'window',
+                        render: (_: unknown, r: AutoApplyRuleItem) => (
+                          <Text type="secondary">
+                            {r.timeWindowStart}–{r.timeWindowEnd} | {r.companyCooldownDays}d company cooldown | +{r.minSpreadMinutes}m spread
+                          </Text>
+                        ),
+                      },
+                      {
+                        title: 'Action',
+                        key: 'action',
+                        render: (_: unknown, r: AutoApplyRuleItem) => (
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleDeleteRule(r.id)}
+                          />
+                        ),
+                      },
+                    ]}
+                  />
+
+                  {dryRunResult && (
+                    <Card
+                      size="small"
+                      title={
+                        <Space>
+                          <Tag color="purple">DRY RUN PREVIEW</Tag>
+                          <Text strong>{dryRunResult.summaryText}</Text>
+                          <Tag color="green">Submissions Created: {dryRunResult.submissionsCreatedCount}</Tag>
+                        </Space>
+                      }
+                    >
+                      <List
+                        size="small"
+                        dataSource={dryRunResult.items}
+                        renderItem={(item) => (
+                          <List.Item>
+                            <Space wrap>
+                              <Tag color={item.wouldMatch ? 'green' : 'default'}>
+                                {item.routingOutcome}
+                              </Tag>
+                              <Text strong>
+                                {item.jobTitle} @ {item.company} ({item.companyTier})
+                              </Text>
+                              <Text type="secondary">{item.explanation}</Text>
+                            </Space>
+                          </List.Item>
+                        )}
+                      />
+                    </Card>
+                  )}
+                </Space>
+              ),
+            },
           ]}
         />
       </Card>
+
+      {/* Create Rule Modal */}
+      <Modal
+        title="Create Ordered Auto-Apply Rule (Max 5 Rules, Max 3 Conditions)"
+        open={ruleModalOpen}
+        onCancel={() => setRuleModalOpen(false)}
+        onOk={() => ruleForm.submit()}
+        okText="Create Rule"
+      >
+        <Form form={ruleForm} layout="vertical" onFinish={handleCreateRule}>
+          <Form.Item name="ruleName" label="Rule Name" rules={[{ required: true }]}>
+            <Input placeholder="e.g. Remote & Hybrid Backend Rule" />
+          </Form.Item>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="cond1Field" label="Condition 1 Field">
+                <Select
+                  allowClear
+                  options={[
+                    { value: 'WORK_MODE', label: 'WORK_MODE' },
+                    { value: 'LOCATION', label: 'LOCATION' },
+                    { value: 'TITLE_KEYWORD', label: 'TITLE_KEYWORD' },
+                    { value: 'MIN_MATCH_SCORE', label: 'MIN_MATCH_SCORE' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="cond1Op" label="Operator" initialValue="CONTAINS">
+                <Select
+                  options={[
+                    { value: 'CONTAINS', label: 'CONTAINS' },
+                    { value: 'EQUALS', label: 'EQUALS' },
+                    { value: 'GTE', label: 'GTE' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="cond1Value" label="Value">
+                <Input placeholder="e.g. HYBRID" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="timeWindowStart" label="Window Start" initialValue="09:00">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="timeWindowEnd" label="Window End" initialValue="19:00">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="minSpreadMinutes" label="Spread (Minutes)" initialValue={15}>
+                <InputNumber min={1} max={240} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
 
       {/* Emergency Stop Confirmation Modal */}
       <Modal

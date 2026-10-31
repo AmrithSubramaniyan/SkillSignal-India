@@ -200,5 +200,13 @@
    - Whenever an application reaches `APPLIED` (via `"I applied"` confirmation in Mode 1, `Needs Verification` resolution, or tracker update), SkillSignal automatically creates a +7 day `FOLLOW_UP` reminder populated with the generated follow-up email draft.
    - All Sprint 4 tables (`answer_library`, `application_packs`, `auto_apply_preferences`, `idempotency_keys`, `application_submissions`, `application_submission_attempts`) are integrated into `GET /api/privacy/export` and `DELETE /api/privacy/account`.
 
+## Stage 24: Ordered Auto-Apply Rules & Zero-Submission Dry Run (`F12`)
+1. **Ordered Rules & Per-Tier Policies (`AutoApplyRuleAndDryRunService`)**:
+   - Enforces a hard limit of 5 rules per user and 3 conditions per rule, evaluated in ascending `priorityOrder`.
+   - Enforces `T1 = REVIEW` (T1 target companies always route to the Review Queue and cannot be configured for automatic submission), time windows in the user's time zone, a 30-day per-company cooldown (`1` application per company per `30` days unless overridden by explicit approval), and spread offsets (`minSpreadMinutes`) within daily/weekly caps.
+2. **Dry Run Guarantee (`dry_run=true`)**:
+   - `POST /api/auto-apply/runs?dry_run=true` and `POST /api/auto-apply/rules/{id}/simulate` evaluate all stored jobs, compute `"Would have matched N of M jobs"`, and persist the `AutoApplyRun` preview while creating **zero** `ApplicationSubmission` and **zero** `Application` records.
+
+
 
 

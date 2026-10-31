@@ -36,9 +36,21 @@
 - [x] **STAGE 22: MODES 1 AND 2 (F8, F9, F10)** — Assisted Apply screen (pack preview, copy buttons, `"Open original page"`, `"I applied"` sets `USER_CONFIRMED`), Review Queue (`GET /api/approval-queue`, `POST /{id}/approve|reject|skip`, `PUT /{id}/answers`, batch approve with exceptions, expiry with freshness re-check, single-use expiring approval link in email requiring login), mobile-friendly `Approval Queue` screen (approve leads only to user-submits path).
 - [x] **STAGE 23: SAFETY BASIC + FOLLOW-UP (F16 basic, F17)** — Global pause/resume/stop (`stop` requires confirmation `"STOP"`), per-source enable/disable, daily/weekly caps (`5/day`, `20/week`, per-user time zone rollover), exclusion lists (`company`, `role`, `source`, `keyword`, `country`), auto-create follow-up reminder and draft after `Applied`, Sprint 4 test suite (`34/34` JUnit tests passing), tag `sprint4-v1`.
 
+## Sprint 5: Rules, Email, Browser Assist, Learning (F11-F14, F16 full, F18, F19) (`sprint5-v1`)
+
+- [x] **STAGE 24: RULES + DRY RUN (F12)** — Up to 5 rules per user, up to 3 conditions each, ordered; per-tier policies (`T1 = REVIEW`); time windows; cooldown (one application per company per 30 days unless approved); spread applications within limits; `POST /api/auto-apply/rules`, `PUT/DELETE /rules/{id}`, `POST /rules/{id}/simulate`, `POST /api/auto-apply/runs?dry_run=true`, `GET /runs/{id}`; dry run creates ZERO submissions (`"Would have matched N of M jobs"`).
+- [ ] **STAGE 25: EMAIL-APPLY (F13)** — **GATE G4**. OAuth for ONE provider first (Gmail or Outlook), minimum send scope, encrypted token reference in `connected_mailboxes`, never the password, disconnect revokes; draft recruiter email with resume attached; send only after approval; store message ID; status `"Sent"` (not confirmed) until an acknowledgement; optional acknowledgement detection upgrades to `EXTERNALLY_CONFIRMED`; tokens never logged.
+- [ ] **STAGE 26: SAFETY GOVERNOR FULL (F16)** — Kill switch (user and admin) halting queued work within seconds; auto-pause after 3 consecutive failures, any CAPTCHA/`"unusual activity"` page, rejection spike or terms-change flag; per-source circuit breaker and rate limiter; row-level locks; `safety_events` table; Big STOP button in the app.
+- [ ] **STAGE 27: MODE 3 ENABLEMENT (F11)** — **GATE G6**. Guided setup, mandatory dry run, typed confirmation, versioned logged consent; revoking cancels pending tasks instantly; default low caps; active only where the capability record allows it.
+- [ ] **STAGE 28: PLAYWRIGHT LITE (F14)** — **GATE G5** (for real portals). Build `apply-agent/` (Node + TypeScript + Playwright, headed Chromium, persistent profile folder, revocable device token, HTTPS task pull/report) + LOCAL MOCK PORTAL + backend `apply_agents`, `apply_tasks`, `portal_settings`, `apply_evidence` and tests against mock portal.
+- [ ] **STAGE 29: LEARNING LOOP + AUTO-APPLY CENTRE (F18, F19)** — Responses by resume version, title, tier, source (user's own data only); rule-change suggestions shown but NEVER applied without consent; skip-reason feedback; Auto-Apply Centre screen; Sprint 5 test suite; tag `sprint5-v1`.
+
 ## Current Status
-- **Current Stage**: Sprint 4 Complete (`sprint4-v1`) — Ready for Sprint 5 (Stages 24–28: Controlled Auto-Apply & Analytics)
-- **Last Commit**: Stage 23 (`feat(stage-23): add safety controls, concurrency & cap boundary verification, auto follow-up reminder/draft on Applied, and close Sprint 4`)
-- **Next Step**: Begin Sprint 5 (Stage 24: Mode 3 Approved API/Email Submission + Gate G4) when requested.
+- **Current Stage**: Stage 25 — Email-Apply (`F13`) — **Waiting at GATE G4** (and GATES G5 / G6 for Stages 27–28)
+- **Last Commit**: Stage 24 (`feat(stage-24): add ordered auto-apply rules, T1 review policy, 30-day company cooldown, and zero-submission dry-run simulator`)
+- **Next Step**: Receive user's GATE G4 (and G5/G6) confirmation, then complete Stages 25–29 and tag `sprint5-v1`.
 - **Open GATES**:
   - **GATE G3 (RESOLVED)**: User confirmed building the Greenhouse Public Job Board API read-only GET connector (`Assisted Apply` only) and keeping Naukri, LinkedIn, Indeed, Foundit, Instahyre, and Wellfound disabled.
+  - **GATE G4 (OPEN — Stage 25)**: Email-apply OAuth app registration (Google Cloud for Gmail or Microsoft Entra for Outlook).
+  - **GATE G5 (OPEN — Stage 28)**: Real-portal adapter terms check & selection (FILL_ONLY mode only; local mock portal built by default).
+  - **GATE G6 (OPEN — Stage 27)**: Written confirmation of account-ban and legal risk before enabling Mode 3 automatic submission anywhere outside the local mock portal.
